@@ -3,6 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import type { Role } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
 const googleConfigured =
@@ -62,11 +63,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
+      if (user?.id) {
         token.sub = user.id;
         token.email = user.email ?? undefined;
         token.name = user.name ?? undefined;
         token.picture = user.image ?? undefined;
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
+        token.role = dbUser?.role ?? "CUSTOMER";
+      } else if (token.sub && !token.role) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub as string },
+          select: { role: true },
+        });
+        token.role = dbUser?.role ?? "CUSTOMER";
       }
       return token;
     },
@@ -76,6 +88,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.email = (token.email as string) ?? "";
         session.user.name = (token.name as string) ?? null;
         session.user.image = (token.picture as string) ?? null;
+        session.user.role = (token.role as Role) ?? "CUSTOMER";
       }
       return session;
     },

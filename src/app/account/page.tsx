@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import SignOutButton from "@/components/auth/SignOutButton";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { isStaffRole, ROLE_LABELS } from "@/lib/rbac";
+import type { Role } from "@prisma/client";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -11,6 +13,8 @@ export default async function AccountPage() {
 
   const { user } = session;
   const emailDisplay = user.email?.trim() || "Not provided";
+  const role = user.role as Role;
+  const staff = isStaffRole(role);
 
   return (
     <div className="max-w-frame mx-auto px-4 py-16 md:py-20">
@@ -39,6 +43,18 @@ export default async function AccountPage() {
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Email</p>
           <p className="text-foreground font-medium">{emailDisplay}</p>
         </div>
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">Access role</p>
+          <p className="text-foreground font-medium">{ROLE_LABELS[role]}</p>
+        </div>
+        {staff && (
+          <Link
+            href="/admin"
+            className="inline-flex rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Admin / CMS
+          </Link>
+        )}
         <div className="pt-4">
           <SignOutButton />
         </div>
