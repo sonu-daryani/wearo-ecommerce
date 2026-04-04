@@ -25,8 +25,75 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import type { Metadata } from "next";
+import {
+  buildShopDescription,
+  buildShopTitle,
+  getMetadataBase,
+  SITE_NAME,
+} from "@/lib/site-config";
 
-export default function ShopPage() {
+type ShopSearchParams = { category?: string; style?: string };
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: ShopSearchParams;
+}): Promise<Metadata> {
+  const category = searchParams.category ?? null;
+  const style = searchParams.style ?? null;
+  const title = buildShopTitle(category, style);
+  const description = buildShopDescription(category, style);
+  const qs = new URLSearchParams();
+  if (category) qs.set("category", category);
+  if (style) qs.set("style", style);
+  const query = qs.toString();
+  const path = query ? `/shop?${query}` : "/shop";
+  const imagePath = query ? `/api/og/shop?${query}` : "/opengraph-image";
+
+  const base = getMetadataBase();
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} | ${SITE_NAME}`,
+      description,
+      url: path,
+      siteName: SITE_NAME,
+      locale: "en_IN",
+      type: "website",
+      images: [
+        {
+          url: imagePath,
+          width: 1200,
+          height: 630,
+          alt: `${title} — ${SITE_NAME}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | ${SITE_NAME}`,
+      description,
+      images: [imagePath],
+    },
+    alternates: {
+      canonical: `${base.origin}${path}`,
+    },
+  };
+}
+
+export default function ShopPage({
+  searchParams,
+}: {
+  searchParams: ShopSearchParams;
+}) {
+  const heading = buildShopTitle(
+    searchParams.category ?? null,
+    searchParams.style ?? null
+  );
+
   return (
     <main className="pb-20">
       <div className="max-w-frame mx-auto px-4 xl:px-0">
@@ -43,7 +110,7 @@ export default function ShopPage() {
           <div className="flex flex-col w-full space-y-5">
             <div className="flex flex-col lg:flex-row lg:justify-between">
               <div className="flex items-center justify-between">
-                <h1 className="font-bold text-2xl md:text-[32px]">Casual</h1>
+                <h1 className="font-bold text-2xl md:text-[32px]">{heading}</h1>
                 <MobileFilters />
               </div>
               <div className="flex flex-col sm:items-center sm:flex-row">
