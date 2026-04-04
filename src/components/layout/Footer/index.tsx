@@ -28,7 +28,7 @@ const socialsData: SocialNetworks[] = [
   {
     id: 4,
     icon: <FaGithub />,
-    url: "https://github.com/mohammadoftadeh",
+    url: "https://github.com/sonu-daryani",
   },
 ];
 
@@ -74,7 +74,7 @@ const Footer = () => {
                   "text-[28px] lg:text-[32px] mb-6",
                 ])}
               >
-                SHOP.CO
+                Wearo.in
               </h1>
               <p className="text-black/60 text-sm mb-9">
                 We have clothes that suits your style and which you’re proud to
@@ -103,12 +103,12 @@ const Footer = () => {
           <hr className="h-[1px] border-t-black/10 mb-6" />
           <div className="flex flex-col sm:flex-row justify-center sm:justify-between items-center mb-2">
             <p className="text-sm text-center sm:text-left text-black/60 mb-4 sm:mb-0 sm:mr-1">
-              Shop.co © Made by{" "}
+              Wearo.in © Made by{" "}
               <Link
-                href="https://github.com/mohammadoftadeh"
+                href="https://github.com/sonudaryani"
                 className="text-black font-medium"
               >
-                Mohammad Oftadeh
+                Sonu Daryani
               </Link>
               {", "}
               Designed by{" "}
