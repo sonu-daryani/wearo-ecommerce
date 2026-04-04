@@ -10,7 +10,11 @@ import {
 import MobileFilters from "@/components/shop-page/filters/MobileFilters";
 import Filters from "@/components/shop-page/filters";
 import { FiSliders } from "react-icons/fi";
-import { newArrivalsData, relatedProductData, topSellingData } from "../page";
+import {
+  newArrivalsData,
+  relatedProductData,
+  topSellingData,
+} from "@/data/homepage";
 import ProductCard from "@/components/common/ProductCard";
 import {
   Pagination,

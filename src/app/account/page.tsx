@@ -1,0 +1,54 @@
+import { auth } from "@/auth";
+import SignOutButton from "@/components/auth/SignOutButton";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+export default async function AccountPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/login?callbackUrl=/account");
+  }
+
+  const { user } = session;
+  const emailDisplay = user.email?.trim() || "Not provided";
+
+  return (
+    <div className="max-w-frame mx-auto px-4 py-16 md:py-20">
+      <nav className="text-sm text-muted-foreground mb-8">
+        <Link href="/" className="hover:text-foreground">
+          Home
+        </Link>
+        <span className="mx-2">/</span>
+        <span className="text-foreground">Account</span>
+      </nav>
+
+      <h1 className="text-3xl font-bold text-foreground mb-2">Your account</h1>
+      <p className="text-muted-foreground text-sm mb-10">
+        Signed in as{" "}
+        <span className="text-foreground font-medium">{emailDisplay}</span>
+      </p>
+
+      <div className="max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm space-y-4">
+        {user.name && (
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Name</p>
+            <p className="text-foreground font-medium">{user.name}</p>
+          </div>
+        )}
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">Email</p>
+          <p className="text-foreground font-medium">{emailDisplay}</p>
+        </div>
+        <div className="pt-4">
+          <SignOutButton />
+        </div>
+      </div>
+
+      <p className="mt-10">
+        <Link href="/shop" className="text-primary text-sm font-medium underline-offset-4 hover:underline">
+          Continue shopping
+        </Link>
+      </p>
+    </div>
+  );
+}
