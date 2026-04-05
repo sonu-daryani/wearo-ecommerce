@@ -7,6 +7,8 @@ import { integralCF } from "@/styles/fonts";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import type { PublicCompanySettings } from "@/lib/company-settings";
+import { getEnvelope, getPlain } from "@/lib/http/request-handler";
 import React, { useEffect, useState, Suspense } from "react";
 import { FaCircleCheck } from "react-icons/fa6";
 
@@ -67,34 +69,29 @@ function OrderConfirmationInner() {
   const token = searchParams.get("token");
   const [order, setOrder] = useState<OrderPayload | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [missingTokenMessage, setMissingTokenMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
       setOrder(null);
+      void getPlain<PublicCompanySettings>("/api/company-settings").then((r) => {
+        if (r.ok) setMissingTokenMessage(r.data.checkoutUi.MISSING_ORDER_REF);
+      });
       return;
     }
     let cancelled = false;
     (async () => {
-      try {
-        const res = await fetch(`/api/orders/by-token?token=${encodeURIComponent(token)}`);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          if (!cancelled) {
-            setError(typeof data.error === "string" ? data.error : "Could not load order.");
-            setOrder(null);
-          }
-          return;
-        }
-        if (!cancelled) {
-          setOrder(data as OrderPayload);
-          setError(null);
-        }
-      } catch {
-        if (!cancelled) {
-          setError("Network error.");
-          setOrder(null);
-        }
+      const res = await getEnvelope<OrderPayload>(
+        `/api/orders/by-token?token=${encodeURIComponent(token)}`
+      );
+      if (cancelled) return;
+      if (!res.ok) {
+        setError(res.message);
+        setOrder(null);
+        return;
       }
+      setOrder(res.data);
+      setError(null);
     })();
     return () => {
       cancelled = true;
@@ -104,7 +101,7 @@ function OrderConfirmationInner() {
   if (!token) {
     return (
       <main className="pb-20 max-w-frame mx-auto px-4 xl:px-0 pt-12 text-center">
-        <p className="text-black/60 mb-4">Missing order reference.</p>
+        <p className="text-black/60 mb-4">{missingTokenMessage ?? "…"}</p>
         <Button asChild className="rounded-full">
           <Link href="/shop">Continue shopping</Link>
         </Button>

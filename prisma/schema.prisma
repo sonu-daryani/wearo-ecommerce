@@ -151,7 +151,12 @@ model CompanySettings {
   stripePublishableKey String?
   razorpayKeyId        String?
   cashfreeAppId        String?
-  paymentInstructions  String?
+
+  stripeSecretEnc   String?
+  razorpaySecretEnc String?
+  cashfreeSecretEnc String?
+
+  paymentInstructions String?
 }
 
 enum OrderStatus {

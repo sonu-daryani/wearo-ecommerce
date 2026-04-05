@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { API_MESSAGES } from "@/lib/api/api-messages";
+import { apiError, apiSuccess } from "@/lib/api/http-responses";
 import { getPublicCompanySettings } from "@/lib/company-settings";
 import {
   createOrderRecord,
@@ -32,33 +34,33 @@ export async function POST(req: Request) {
   try {
     body = (await req.json()) as Body;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+    return apiError(API_MESSAGES.COMMON.INVALID_JSON, 400);
   }
 
   const { shipping, paymentMethod, items, codFee, grandTotal } = body;
   if (!shipping?.fullName || !shipping?.email || !shipping?.phone || !shipping?.address) {
-    return NextResponse.json({ error: "Missing shipping fields." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.MISSING_SHIPPING, 400);
   }
   if (paymentMethod !== "cod" && paymentMethod !== "online") {
-    return NextResponse.json({ error: "Invalid payment method." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.INVALID_PAYMENT_METHOD, 400);
   }
   if (!Array.isArray(items) || !items.length) {
-    return NextResponse.json({ error: "No items." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.NO_ITEMS, 400);
   }
 
   const company = await getPublicCompanySettings();
   const { checkout, currency } = company;
 
   if (paymentMethod === "cod" && !checkout.codAvailable) {
-    return NextResponse.json({ error: "COD is not available." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.COD_UNAVAILABLE, 400);
   }
   if (paymentMethod === "online" && !checkout.onlineAvailable) {
-    return NextResponse.json({ error: "Online payment is not available." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.ONLINE_UNAVAILABLE, 400);
   }
 
   const summary = await validateAndSummarizeLines(items);
   if (!summary.ok) {
-    return NextResponse.json({ error: summary.error }, { status: 400 });
+    return apiError(summary.error, 400);
   }
 
   const { subtotal, adjustedSubtotal } = summary;
@@ -75,7 +77,7 @@ export async function POST(req: Request) {
 
   const serverGrand = adjustedSubtotal + serverCodFee;
   if (Math.abs(serverGrand - Number(grandTotal)) > EPS || Math.abs(serverCodFee - Number(codFee)) > EPS) {
-    return NextResponse.json({ error: "Totals do not match. Refresh and try again." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.TOTALS_MISMATCH, 400);
   }
 
   const paymentProvider =
@@ -84,7 +86,7 @@ export async function POST(req: Request) {
       : null;
 
   if (paymentMethod === "online" && checkout.onlineProviders.length > 0 && !paymentProvider) {
-    return NextResponse.json({ error: "No payment provider configured." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.NO_PROVIDER_CONFIGURED, 400);
   }
 
   const session = await auth();
@@ -104,13 +106,9 @@ export async function POST(req: Request) {
       userId: orderUserId,
     });
 
-    return NextResponse.json({
-      publicToken,
-      orderNumber,
-      requiresPaymentConfirmation: paymentMethod === "online",
-    });
+    return apiSuccess({ publicToken, orderNumber }, API_MESSAGES.ORDERS.PLACED, 200);
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Could not create order." }, { status: 500 });
+    return apiError(API_MESSAGES.ORDERS.PLACE_FAILED, 500);
   }
 }

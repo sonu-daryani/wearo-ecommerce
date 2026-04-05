@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { API_MESSAGES } from "@/lib/api/api-messages";
+import { apiError, apiSuccess } from "@/lib/api/http-responses";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 
@@ -11,18 +12,12 @@ export async function POST(req: Request) {
 
     const email = emailRaw.toLowerCase();
     if (!email || !password || password.length < 8) {
-      return NextResponse.json(
-        { error: "Valid email and password (min 8 characters) required." },
-        { status: 400 }
-      );
+      return apiError(API_MESSAGES.AUTH.REGISTER_INVALID, 400);
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json(
-        { error: "An account with this email already exists." },
-        { status: 409 }
-      );
+      return apiError(API_MESSAGES.AUTH.REGISTER_EXISTS, 409);
     }
 
     const hashed = await bcrypt.hash(password, 12);
@@ -34,11 +29,8 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true }, { status: 201 });
+    return apiSuccess({ registered: true }, API_MESSAGES.AUTH.REGISTER_SUCCESS, 201);
   } catch {
-    return NextResponse.json(
-      { error: "Something went wrong. Please try again." },
-      { status: 500 }
-    );
+    return apiError(API_MESSAGES.COMMON.INTERNAL_ERROR, 500);
   }
 }

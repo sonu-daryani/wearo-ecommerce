@@ -16,6 +16,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { FaArrowLeft } from "react-icons/fa6";
 import { FaCreditCard, FaMoneyBillWave } from "react-icons/fa6";
+import { loadCashfreeJs, openCashfreeModal } from "@/lib/cashfree-checkout";
+import type { PaymentSessionPayload } from "@/lib/payments/types";
+import { loadRazorpayScript, openRazorpayCheckout } from "@/lib/razorpay-checkout";
+import { useApiLoading } from "@/hooks/use-api-loading";
+import { getPlain, postEnvelope } from "@/lib/http/request-handler";
 
 function formatMoney(amount: number, currency: PublicCompanySettings["currency"]) {
   try {
@@ -47,13 +52,21 @@ const PROVIDER_LABELS: Record<string, string> = {
   CASHFREE: "Cashfree",
 };
 
+function isProviderServerReady(company: PublicCompanySettings, provider: string): boolean {
+  const r = company.paymentProviderReadiness;
+  if (provider === "STRIPE") return r.STRIPE;
+  if (provider === "RAZORPAY") return r.RAZORPAY;
+  if (provider === "CASHFREE") return r.CASHFREE;
+  return false;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { cart, totalPrice, adjustedTotalPrice } = useAppSelector(
     (state: RootState) => state.carts
   );
-  const [submitting, setSubmitting] = useState(false);
+  const { loading: submitting, withLoading } = useApiLoading();
   const [company, setCompany] = useState<PublicCompanySettings | null>(null);
   const [payMethod, setPayMethod] = useState<"cod" | "online" | null>(null);
   const [onlineProvider, setOnlineProvider] = useState<string>("");
@@ -61,22 +74,21 @@ export default function CheckoutPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const res = await fetch("/api/company-settings");
-        const data = (await res.json()) as PublicCompanySettings;
-        if (!cancelled) {
-          setCompany(data);
-          const { checkout } = data;
-          if (checkout.codAvailable && !checkout.onlineAvailable) setPayMethod("cod");
-          else if (!checkout.codAvailable && checkout.onlineAvailable) setPayMethod("online");
-          else if (checkout.codAvailable && checkout.onlineAvailable) setPayMethod("cod");
-          else setPayMethod(null);
-          const first = checkout.onlineProviders[0] ?? "";
-          setOnlineProvider(first);
-        }
-      } catch {
-        if (!cancelled) setCompany(null);
+      const res = await getPlain<PublicCompanySettings>("/api/company-settings");
+      if (cancelled) return;
+      if (!res.ok) {
+        setCompany(null);
+        return;
       }
+      const data = res.data;
+      setCompany(data);
+      const { checkout } = data;
+      if (checkout.codAvailable && !checkout.onlineAvailable) setPayMethod("cod");
+      else if (!checkout.codAvailable && checkout.onlineAvailable) setPayMethod("online");
+      else if (checkout.codAvailable && checkout.onlineAvailable) setPayMethod("cod");
+      else setPayMethod(null);
+      const first = checkout.onlineProviders[0] ?? "";
+      setOnlineProvider(first);
     })();
     return () => {
       cancelled = true;
@@ -102,7 +114,7 @@ export default function CheckoutPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <main className="pb-20 max-w-frame mx-auto px-4 xl:px-0 pt-12 text-center">
-        <p className="text-black/60 mb-4">Your cart is empty.</p>
+        <p className="text-black/60 mb-4">{company ? company.checkoutUi.CART_EMPTY : "…"}</p>
         <Button asChild className="rounded-full">
           <Link href="/shop">Continue shopping</Link>
         </Button>
@@ -115,8 +127,9 @@ export default function CheckoutPage() {
 
   async function placeOrder(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const ui = company?.checkoutUi;
     if (noPayment || !payMethod || !cart) {
-      toast.error("No payment method is available. Ask the store to enable payments in admin.");
+      toast.error(ui?.NO_PAYMENT_METHOD ?? "");
       return;
     }
     if (
@@ -125,7 +138,11 @@ export default function CheckoutPage() {
       checkoutCfg.onlineProviders.length > 0 &&
       !onlineProvider
     ) {
-      toast.error("Choose a payment provider.");
+      toast.error(ui?.CHOOSE_PROVIDER ?? "");
+      return;
+    }
+    if (payMethod === "online" && company && !isProviderServerReady(company, onlineProvider)) {
+      toast.error(ui?.PROVIDER_NOT_READY ?? "");
       return;
     }
 
@@ -149,43 +166,104 @@ export default function CheckoutPage() {
       discount: item.discount,
     }));
 
-    setSubmitting(true);
-    try {
-      const placeRes = await fetch("/api/orders/place", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    await withLoading(async () => {
+      const placeRes = await postEnvelope<{ publicToken: string; orderNumber: string }>(
+        "/api/orders/place",
+        {
           shipping,
           paymentMethod: payMethod,
           paymentProvider: payMethod === "online" ? onlineProvider || null : null,
           items,
           codFee: codExtra,
           grandTotal,
-        }),
-      });
-      const placeData = await placeRes.json().catch(() => ({}));
+        }
+      );
       if (!placeRes.ok) {
-        toast.error(typeof placeData.error === "string" ? placeData.error : "Could not place order.");
+        toast.error(placeRes.message);
         return;
       }
 
-      const { publicToken, requiresPaymentConfirmation } = placeData as {
-        publicToken: string;
-        orderNumber: string;
-        requiresPaymentConfirmation?: boolean;
-      };
+      const { publicToken } = placeRes.data;
 
-      if (requiresPaymentConfirmation && publicToken) {
-        const payRes = await fetch("/api/orders/confirm-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ publicToken }),
+      if (payMethod === "online" && publicToken) {
+        const sessRes = await postEnvelope<PaymentSessionPayload>("/api/payments/session", {
+          publicToken,
         });
-        const payData = await payRes.json().catch(() => ({}));
-        if (!payRes.ok) {
-          toast.error(
-            typeof payData.error === "string" ? payData.error : "Payment could not be confirmed."
-          );
+        if (!sessRes.ok) {
+          toast.error(sessRes.message);
+          return;
+        }
+        const payload = sessRes.data;
+
+        if (payload.provider === "STRIPE") {
+          window.location.href = payload.checkoutUrl;
+          return;
+        }
+
+        if (payload.provider === "CASHFREE") {
+          try {
+            await loadCashfreeJs();
+          } catch {
+            toast.error(ui?.SDK_CASHFREE ?? "");
+            return;
+          }
+          const cfResult = await openCashfreeModal(payload.paymentSessionId, payload.cashfreeMode);
+          if (cfResult.error && !cfResult.paymentDetails) {
+            toast.warning(ui?.PAYMENT_NOT_COMPLETED ?? "");
+            router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+            return;
+          }
+          const verifyRes = await postEnvelope<{ verified: true }>("/api/payments/verify", {
+            publicToken,
+          });
+          if (!verifyRes.ok) {
+            toast.error(verifyRes.message);
+            router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+            return;
+          }
+        } else if (payload.provider === "RAZORPAY") {
+          try {
+            await loadRazorpayScript();
+          } catch {
+            toast.error(ui?.SDK_RAZORPAY ?? "");
+            return;
+          }
+          try {
+            const rz = await openRazorpayCheckout({
+              keyId: payload.keyId,
+              orderId: payload.orderId,
+              amount: payload.amount,
+              currency: payload.currency,
+              name: payload.companyName,
+              description: payload.description,
+              customerName: payload.customerName,
+              customerEmail: payload.customerEmail,
+              customerContact: payload.customerContact,
+            });
+            const verifyRes = await postEnvelope<{ verified: true }>("/api/payments/verify", {
+              publicToken,
+              razorpayPaymentId: rz.razorpay_payment_id,
+              razorpayOrderId: rz.razorpay_order_id,
+              razorpaySignature: rz.razorpay_signature,
+            });
+            if (!verifyRes.ok) {
+              toast.error(verifyRes.message);
+              router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+              return;
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "";
+            if (msg === "dismissed") {
+              toast.warning(ui?.PAYMENT_CANCELLED ?? "");
+              router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+              return;
+            }
+            toast.error(ui?.PAYMENT_INCOMPLETE ?? "");
+            router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+            return;
+          }
+        } else {
+          toast.error(ui?.UNSUPPORTED_PROVIDER ?? "");
           return;
         }
       }
@@ -193,13 +271,11 @@ export default function CheckoutPage() {
       dispatch(clearCart());
       toast.success(
         payMethod === "cod"
-          ? "Order placed — pay on delivery."
-          : "Payment successful — thank you for your order."
+          ? (ui?.COD_SUCCESS_TOAST ?? placeRes.message)
+          : (ui?.ONLINE_SUCCESS_TOAST ?? placeRes.message)
       );
       router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
-    } finally {
-      setSubmitting(false);
-    }
+    });
   }
 
   const channelLabels: string[] = [];
@@ -378,6 +454,7 @@ export default function CheckoutPage() {
                               {checkoutCfg.onlineProviders.map((p) => (
                                 <option key={p} value={p}>
                                   {PROVIDER_LABELS[p] ?? p}
+                                  {company && !isProviderServerReady(company, p) ? " (setup required)" : ""}
                                 </option>
                               ))}
                             </select>
@@ -455,7 +532,17 @@ export default function CheckoutPage() {
                 {submitting ? "Placing order…" : "Place order"}
               </Button>
               <p className="text-[11px] text-center text-black/40 leading-relaxed">
-                Secure checkout · Demo mode — connect Stripe, Razorpay, or Cashfree in admin when you go live.
+                {payMethod === "online" && company && isProviderServerReady(company, onlineProvider)
+                  ? onlineProvider === "STRIPE"
+                    ? "Secure checkout · You will complete payment on Stripe."
+                    : onlineProvider === "RAZORPAY"
+                      ? "Secure checkout · Razorpay (UPI, cards, netbanking)."
+                      : onlineProvider === "CASHFREE"
+                        ? "Secure checkout · Cashfree (UPI, cards, netbanking)."
+                        : "Secure checkout · Pay online."
+                  : payMethod === "online"
+                    ? "Secure checkout · Configure the selected provider on the server to enable live payments."
+                    : "Secure checkout · Pay on delivery."}
               </p>
             </div>
           </aside>

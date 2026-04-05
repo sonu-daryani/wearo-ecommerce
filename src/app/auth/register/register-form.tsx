@@ -4,6 +4,8 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useApiLoading } from "@/hooks/use-api-loading";
+import { postEnvelope } from "@/lib/http/request-handler";
 import { useState } from "react";
 import { toast } from "react-toastify";
 
@@ -17,38 +19,26 @@ export function RegisterForm({ googleAuthEnabled }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { loading, withLoading } = useApiLoading();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          password,
-        }),
+    await withLoading(async () => {
+      const res = await postEnvelope<{ registered: true }>("/api/auth/register", {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = typeof data.error === "string" ? data.error : "Registration failed.";
-        setError(msg);
-        toast.error(msg);
-        setLoading(false);
+        setError(res.message);
+        toast.error(res.message);
         return;
       }
+      toast.success(res.message);
       router.push("/auth/login?registered=1");
       router.refresh();
-    } catch {
-      const msg = "Something went wrong.";
-      setError(msg);
-      toast.error(msg);
-      setLoading(false);
-    }
+    });
   }
 
   return (

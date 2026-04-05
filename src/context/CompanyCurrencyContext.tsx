@@ -1,6 +1,7 @@
 "use client";
 
 import type { PublicCompanySettings } from "@/lib/company-settings";
+import { getPlain } from "@/lib/http/request-handler";
 import {
   DEFAULT_STORE_CURRENCY,
   formatCurrencyAmount,
@@ -31,9 +32,9 @@ export function CompanyCurrencyProvider({ children }: { children: React.ReactNod
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/company-settings");
-        const data = (await res.json()) as PublicCompanySettings;
-        if (!cancelled && data?.currency) {
+        const res = await getPlain<PublicCompanySettings>("/api/company-settings");
+        if (!cancelled && res.ok && res.data?.currency) {
+          const data = res.data;
           setCurrency({
             code: data.currency.code,
             symbol: data.currency.symbol,

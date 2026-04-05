@@ -1,3 +1,4 @@
+import { API_MESSAGES } from "@/lib/api/api-messages";
 import prisma from "@/lib/prisma";
 import { DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/site-config";
 import type { CompanySettings } from "@prisma/client";
@@ -35,7 +36,15 @@ export type PublicCompanySettings = {
   stripePublishableKey: string | null;
   razorpayKeyId: string | null;
   cashfreeAppId: string | null;
+  /** Per-provider: CMS key present + matching secret env on this server (see .env.example). */
+  paymentProviderReadiness: {
+    STRIPE: boolean;
+    RAZORPAY: boolean;
+    CASHFREE: boolean;
+  };
   paymentInstructions: string | null;
+  /** Checkout copy from server (`api-messages.ts`); use for client-side toasts before POST. */
+  checkoutUi: typeof API_MESSAGES.CHECKOUT_UI;
 };
 
 function mapRow(row: CompanySettings) {
@@ -75,7 +84,13 @@ function mapRow(row: CompanySettings) {
     stripePublishableKey: row.stripePublishableKey,
     razorpayKeyId: row.razorpayKeyId,
     cashfreeAppId: row.cashfreeAppId ?? null,
+    paymentProviderReadiness: {
+      STRIPE: !!(row.stripePublishableKey?.trim() && row.stripeSecretEnc?.trim()),
+      RAZORPAY: !!(row.razorpayKeyId?.trim() && row.razorpaySecretEnc?.trim()),
+      CASHFREE: !!(row.cashfreeAppId?.trim() && row.cashfreeSecretEnc?.trim()),
+    },
     paymentInstructions: row.paymentInstructions,
+    checkoutUi: API_MESSAGES.CHECKOUT_UI,
   } satisfies PublicCompanySettings;
 }
 
@@ -110,7 +125,13 @@ const FALLBACK: PublicCompanySettings = {
   stripePublishableKey: null,
   razorpayKeyId: null,
   cashfreeAppId: null,
+  paymentProviderReadiness: {
+    STRIPE: false,
+    RAZORPAY: false,
+    CASHFREE: false,
+  },
   paymentInstructions: null,
+  checkoutUi: API_MESSAGES.CHECKOUT_UI,
 };
 
 /** Public-safe payload for the storefront (and JSON API). */

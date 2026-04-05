@@ -1,37 +1,33 @@
-import { NextResponse } from "next/server";
+import { API_MESSAGES } from "@/lib/api/api-messages";
+import { apiError, apiSuccess } from "@/lib/api/http-responses";
 import { markOnlinePaymentPaid } from "@/lib/orders/create-order";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Call after your payment gateway reports success (Razorpay/Stripe/Cashfree webhook or redirect).
- * Demo: the checkout UI calls this with `publicToken` after `/api/orders/place` for online orders.
- * Production: disable client-triggered confirmation — set `DISABLE_CLIENT_ORDER_PAYMENT_CONFIRM=true` and only
- * mark orders paid from verified webhooks.
+ * Legacy: marks an online order paid without gateway verification.
+ * Checkout uses POST /api/payments/session + /api/payments/verify per provider (Stripe, Razorpay, Cashfree).
  */
 export async function POST(req: Request) {
   if (process.env.DISABLE_CLIENT_ORDER_PAYMENT_CONFIRM === "true") {
-    return NextResponse.json(
-      { error: "Client payment confirmation is disabled. Use a verified webhook." },
-      { status: 403 }
-    );
+    return apiError(API_MESSAGES.PAYMENTS.LEGACY_CONFIRM_DISABLED, 403);
   }
   let body: { publicToken?: string };
   try {
     body = (await req.json()) as { publicToken?: string };
   } catch {
-    return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+    return apiError(API_MESSAGES.COMMON.INVALID_JSON, 400);
   }
 
   const publicToken = body.publicToken?.trim();
   if (!publicToken) {
-    return NextResponse.json({ error: "Missing publicToken." }, { status: 400 });
+    return apiError(API_MESSAGES.PAYMENTS.MISSING_PUBLIC_TOKEN, 400);
   }
 
   const result = await markOnlinePaymentPaid(publicToken);
   if (!result.ok) {
-    return NextResponse.json({ error: result.error ?? "Failed." }, { status: 400 });
+    return apiError(result.error ?? API_MESSAGES.COMMON.INTERNAL_ERROR, 400);
   }
 
-  return NextResponse.json({ ok: true });
+  return apiSuccess({ confirmed: true }, API_MESSAGES.PAYMENTS.LEGACY_CONFIRM_OK, 200);
 }

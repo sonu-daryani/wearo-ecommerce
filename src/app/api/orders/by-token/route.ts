@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { API_MESSAGES } from "@/lib/api/api-messages";
+import { apiError, apiSuccess } from "@/lib/api/http-responses";
 import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-/** Public order summary for the confirmation page (no internal ids). */
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get("token")?.trim();
   if (!token) {
-    return NextResponse.json({ error: "Missing token." }, { status: 400 });
+    return apiError(API_MESSAGES.ORDERS.MISSING_TOKEN, 400);
   }
 
   const order = await prisma.order.findUnique({
@@ -30,8 +30,8 @@ export async function GET(req: Request) {
   });
 
   if (!order) {
-    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    return apiError(API_MESSAGES.ORDERS.NOT_FOUND, 404);
   }
 
-  return NextResponse.json(order);
+  return apiSuccess(order, API_MESSAGES.ORDERS.LOADED, 200);
 }
