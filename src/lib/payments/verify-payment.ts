@@ -1,6 +1,6 @@
 import { getPublicCompanySettings } from "@/lib/company-settings";
 import { markOnlinePaymentPaid } from "@/lib/orders/create-order";
-import { getDecryptedProviderSecrets } from "@/lib/payment-secrets-db";
+import { getProviderSecretsFromDb } from "@/lib/payment-secrets-db";
 import prisma from "@/lib/prisma";
 import { cashfreeGetOrderStatus } from "@/lib/payments/cashfree-server";
 import {
@@ -43,13 +43,13 @@ export async function verifyOnlinePayment(input: {
   }
 
   const company = await getPublicCompanySettings();
-  const secrets = await getDecryptedProviderSecrets();
+  const secrets = await getProviderSecretsFromDb();
 
   if (provider === "CASHFREE") {
     const secret = secrets.cashfreeClientSecret?.trim();
     const appId = company.cashfreeAppId?.trim();
     if (!secret || !appId) {
-      return { ok: false, error: "Cashfree secret missing or cannot be decrypted.", status: 503 };
+      return { ok: false, error: "Cashfree secret is missing in company settings.", status: 503 };
     }
     const st = await cashfreeGetOrderStatus({
       clientId: appId,
@@ -73,7 +73,7 @@ export async function verifyOnlinePayment(input: {
     }
     const sk = secrets.stripeSecretKey?.trim();
     if (!sk) {
-      return { ok: false, error: "Stripe secret missing or cannot be decrypted.", status: 503 };
+      return { ok: false, error: "Stripe secret is missing in company settings.", status: 503 };
     }
     const v = await stripeVerifyCheckoutSession({
       sessionId: sid,
@@ -95,7 +95,7 @@ export async function verifyOnlinePayment(input: {
     const keySecret = secrets.razorpayKeySecret?.trim();
     const keyId = company.razorpayKeyId?.trim();
     if (!keySecret || !keyId) {
-      return { ok: false, error: "Razorpay secret missing or cannot be decrypted.", status: 503 };
+      return { ok: false, error: "Razorpay secret is missing in company settings.", status: 503 };
     }
     if (!razorpayVerifySignature(oid, pid, sig, keySecret)) {
       return { ok: false, error: "Invalid Razorpay signature.", status: 400 };

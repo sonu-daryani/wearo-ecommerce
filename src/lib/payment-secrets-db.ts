@@ -1,10 +1,10 @@
+import { mergeCompanySettingsSecrets } from "@/lib/company-settings-secret-overlay";
 import prisma from "@/lib/prisma";
-import { decryptPaymentSecret } from "@/lib/payment-secrets-crypto";
 
 const KEY = "default";
 
-/** Decrypted provider API secrets from DB (never send to the browser). */
-export async function getDecryptedProviderSecrets(): Promise<{
+/** Provider API secrets from DB (never send to the browser). */
+export async function getProviderSecretsFromDb(): Promise<{
   stripeSecretKey: string | null;
   razorpayKeySecret: string | null;
   cashfreeClientSecret: string | null;
@@ -13,9 +13,10 @@ export async function getDecryptedProviderSecrets(): Promise<{
   if (!row) {
     return { stripeSecretKey: null, razorpayKeySecret: null, cashfreeClientSecret: null };
   }
+  const merged = await mergeCompanySettingsSecrets(row);
   return {
-    stripeSecretKey: decryptPaymentSecret(row.stripeSecretEnc),
-    razorpayKeySecret: decryptPaymentSecret(row.razorpaySecretEnc),
-    cashfreeClientSecret: decryptPaymentSecret(row.cashfreeSecretEnc),
+    stripeSecretKey: merged.stripeSecretKey?.trim() ?? null,
+    razorpayKeySecret: merged.razorpayKeySecret?.trim() ?? null,
+    cashfreeClientSecret: merged.cashfreeClientSecret?.trim() ?? null,
   };
 }

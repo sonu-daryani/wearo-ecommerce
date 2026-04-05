@@ -1,5 +1,5 @@
 import { getPublicCompanySettings } from "@/lib/company-settings";
-import { getDecryptedProviderSecrets } from "@/lib/payment-secrets-db";
+import { getProviderSecretsFromDb } from "@/lib/payment-secrets-db";
 import prisma from "@/lib/prisma";
 import { cashfreeCreateOrder, cashfreeJsMode } from "@/lib/payments/cashfree-server";
 import { razorpayCreateOrder } from "@/lib/payments/razorpay-server";
@@ -32,7 +32,7 @@ export async function createPaymentSessionForPublicToken(
   }
 
   const company = await getPublicCompanySettings();
-  const secrets = await getDecryptedProviderSecrets();
+  const secrets = await getProviderSecretsFromDb();
 
   if (provider === "CASHFREE") {
     const secret = secrets.cashfreeClientSecret?.trim();
@@ -41,7 +41,7 @@ export async function createPaymentSessionForPublicToken(
       return {
         ok: false,
         error:
-          "Cashfree is not configured: save App ID and secret key in Admin → Payment settings, and set PAYMENT_ENCRYPTION_KEY on the storefront.",
+          "Cashfree is not configured: save App ID and secret key in Admin → Payment settings.",
         status: 503,
       };
     }
@@ -86,7 +86,7 @@ export async function createPaymentSessionForPublicToken(
       return {
         ok: false,
         error:
-          "Stripe is not configured: save publishable + secret keys in Admin → Payment settings, and set PAYMENT_ENCRYPTION_KEY on the storefront.",
+          "Stripe is not configured: save publishable and secret keys in Admin → Payment settings.",
         status: 503,
       };
     }
@@ -112,7 +112,7 @@ export async function createPaymentSessionForPublicToken(
       return {
         ok: false,
         error:
-          "Razorpay is not configured: save Key ID + secret in Admin → Payment settings, and set PAYMENT_ENCRYPTION_KEY on the storefront.",
+          "Razorpay is not configured: save Key ID and secret in Admin → Payment settings.",
         status: 503,
       };
     }

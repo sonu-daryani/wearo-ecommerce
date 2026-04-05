@@ -152,9 +152,10 @@ model CompanySettings {
   razorpayKeyId        String?
   cashfreeAppId        String?
 
-  stripeSecretEnc   String?
-  razorpaySecretEnc String?
-  cashfreeSecretEnc String?
+  /// Server-only; never exposed in public JSON.
+  stripeSecretKey      String?
+  razorpayKeySecret    String?
+  cashfreeClientSecret String?
 
   paymentInstructions String?
 }

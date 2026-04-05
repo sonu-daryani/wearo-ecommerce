@@ -1,4 +1,5 @@
 import { API_MESSAGES } from "@/lib/api/api-messages";
+import { mergeCompanySettingsSecrets } from "@/lib/company-settings-secret-overlay";
 import prisma from "@/lib/prisma";
 import { DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/site-config";
 import type { CompanySettings } from "@prisma/client";
@@ -36,7 +37,7 @@ export type PublicCompanySettings = {
   stripePublishableKey: string | null;
   razorpayKeyId: string | null;
   cashfreeAppId: string | null;
-  /** Per-provider: CMS key present + matching secret env on this server (see .env.example). */
+  /** Per-provider: publishable/app id + secret saved in company settings (same DB). */
   paymentProviderReadiness: {
     STRIPE: boolean;
     RAZORPAY: boolean;
@@ -85,9 +86,9 @@ function mapRow(row: CompanySettings) {
     razorpayKeyId: row.razorpayKeyId,
     cashfreeAppId: row.cashfreeAppId ?? null,
     paymentProviderReadiness: {
-      STRIPE: !!(row.stripePublishableKey?.trim() && row.stripeSecretEnc?.trim()),
-      RAZORPAY: !!(row.razorpayKeyId?.trim() && row.razorpaySecretEnc?.trim()),
-      CASHFREE: !!(row.cashfreeAppId?.trim() && row.cashfreeSecretEnc?.trim()),
+      STRIPE: !!(row.stripePublishableKey?.trim() && row.stripeSecretKey?.trim()),
+      RAZORPAY: !!(row.razorpayKeyId?.trim() && row.razorpayKeySecret?.trim()),
+      CASHFREE: !!(row.cashfreeAppId?.trim() && row.cashfreeClientSecret?.trim()),
     },
     paymentInstructions: row.paymentInstructions,
     checkoutUi: API_MESSAGES.CHECKOUT_UI,
@@ -138,5 +139,6 @@ const FALLBACK: PublicCompanySettings = {
 export async function getPublicCompanySettings(): Promise<PublicCompanySettings> {
   const row = await prisma.companySettings.findUnique({ where: { key: KEY } });
   if (!row) return FALLBACK;
-  return mapRow(row);
+  const merged = await mergeCompanySettingsSecrets(row);
+  return mapRow(merged);
 }

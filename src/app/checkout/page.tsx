@@ -60,6 +60,16 @@ function isProviderServerReady(company: PublicCompanySettings, provider: string)
   return false;
 }
 
+function providerNotReadyMessage(
+  ui: PublicCompanySettings["checkoutUi"],
+  provider: string
+): string {
+  if (provider === "STRIPE") return ui.PROVIDER_NOT_READY_STRIPE;
+  if (provider === "RAZORPAY") return ui.PROVIDER_NOT_READY_RAZORPAY;
+  if (provider === "CASHFREE") return ui.PROVIDER_NOT_READY_CASHFREE;
+  return ui.PROVIDER_NOT_READY;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -127,6 +137,7 @@ export default function CheckoutPage() {
 
   async function placeOrder(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     const ui = company?.checkoutUi;
     if (noPayment || !payMethod || !cart) {
       toast.error(ui?.NO_PAYMENT_METHOD ?? "");
@@ -141,12 +152,19 @@ export default function CheckoutPage() {
       toast.error(ui?.CHOOSE_PROVIDER ?? "");
       return;
     }
-    if (payMethod === "online" && company && !isProviderServerReady(company, onlineProvider)) {
-      toast.error(ui?.PROVIDER_NOT_READY ?? "");
-      return;
+    if (payMethod === "online" && onlineProvider) {
+      const fresh = await getPlain<PublicCompanySettings>("/api/company-settings");
+      const live = fresh.ok ? fresh.data : company;
+      if (live && !isProviderServerReady(live, onlineProvider)) {
+        const msgs = live.checkoutUi;
+        toast.error(providerNotReadyMessage(msgs, onlineProvider));
+        if (fresh.ok) setCompany(live);
+        return;
+      }
+      if (fresh.ok) setCompany(fresh.data);
     }
 
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const shipping = {
       fullName: String(fd.get("fullName") ?? "").trim(),
       email: String(fd.get("email") ?? "").trim(),

@@ -48,7 +48,13 @@ export const API_MESSAGES = {
       "No payment method is available. Ask the store to enable payments in admin.",
     CHOOSE_PROVIDER: "Choose a payment provider.",
     PROVIDER_NOT_READY:
-      "This provider is not ready: add publishable key + secret in Admin → Payment settings, and set PAYMENT_ENCRYPTION_KEY on the storefront (same as admin). See .env.example.",
+      "This provider is not fully configured in Admin → Payment settings.",
+    PROVIDER_NOT_READY_STRIPE:
+      "Stripe: add the publishable key and secret key in Admin → Payment settings.",
+    PROVIDER_NOT_READY_RAZORPAY:
+      "Razorpay: add the Key ID and Key Secret in Admin → Payment settings.",
+    PROVIDER_NOT_READY_CASHFREE:
+      "Cashfree: add the App ID and Secret key in Admin → Payment settings.",
     SDK_CASHFREE: "Could not load payment SDK. Check your network or ad blocker.",
     SDK_RAZORPAY: "Could not load Razorpay. Check your network or ad blocker.",
     PAYMENT_NOT_COMPLETED: "Payment was not completed. You can retry from your order page.",

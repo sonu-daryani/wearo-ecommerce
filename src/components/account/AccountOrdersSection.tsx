@@ -54,7 +54,7 @@ export async function AccountOrdersSection({ userId }: { userId: string }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
-                  {new Date(o.createdAt).toLocaleDateString(undefined, {
+                  {new Date(o.createdAt).toLocaleString(undefined, {
                     dateStyle: "medium",
                     timeStyle: "short",
                   })}

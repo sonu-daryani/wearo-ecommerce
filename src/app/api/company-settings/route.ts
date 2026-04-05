@@ -7,7 +7,8 @@ export async function GET() {
   const data = await getPublicCompanySettings();
   return NextResponse.json(data, {
     headers: {
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      // Must not cache: includes paymentProviderReadiness (changes when admin saves secrets).
+      "Cache-Control": "private, no-store, must-revalidate",
     },
   });
 }
