@@ -1,18 +1,11 @@
 import { API_MESSAGES } from "@/lib/api/api-messages";
 import { apiError, apiSuccess } from "@/lib/api/http-responses";
+import { originFromRequest } from "@/lib/http/origin-from-request";
 import { createPaymentSessionForPublicToken } from "@/lib/payments/create-payment-session";
 
 export const dynamic = "force-dynamic";
 
 type Body = { publicToken?: string };
-
-export function originFromRequest(req: Request): string {
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
-  const proto =
-    req.headers.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  if (!host) return "";
-  return `${proto}://${host}`;
-}
 
 export async function POST(req: Request) {
   let body: Body;
