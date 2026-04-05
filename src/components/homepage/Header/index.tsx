@@ -7,7 +7,12 @@ import Link from "next/link";
 import React from "react";
 import * as motion from "framer-motion/client";
 
-const Header = () => {
+type HeaderProps = {
+  heroDesktopUrl: string;
+  heroMobileUrl: string;
+};
+
+const Header = ({ heroDesktopUrl, heroMobileUrl }: HeaderProps) => {
   return (
     <header className="bg-[#F2F0F1] pt-10 md:pt-24 overflow-hidden">
       <div className="md:max-w-frame mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
@@ -94,8 +99,19 @@ const Header = () => {
           whileInView={{ y: "0", opacity: 1, rotate: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 2.3, duration: 0.8 }}
-          className="relative md:px-4 min-h-[448px] md:min-h-[428px] bg-cover bg-top xl:bg-[center_top_-1.6rem] bg-no-repeat bg-[url('/images/header-res-homepage.png')] md:bg-[url('/images/header-homepage.png')]"
+          className="relative md:px-4 min-h-[448px] md:min-h-[428px] overflow-hidden"
         >
+          <div
+            className="absolute inset-0 md:hidden bg-cover bg-top bg-no-repeat"
+            style={{ backgroundImage: `url(${JSON.stringify(heroMobileUrl)})` }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-0 hidden md:block bg-cover bg-no-repeat xl:bg-[center_top_-1.6rem]"
+            style={{ backgroundImage: `url(${JSON.stringify(heroDesktopUrl)})` }}
+            aria-hidden
+          />
+          <div className="relative z-10 min-h-[448px] md:min-h-[428px]">
           <Image
             priority
             src="/icons/big-star.svg"
@@ -112,6 +128,7 @@ const Header = () => {
             alt="small star"
             className="absolute left-7 md:left-0 top-36 sm:top-64 md:top-44 lg:top-56 max-w-11 max-h-11 md:max-w-14 md:max-h-14 animate-[spin_3s_infinite]"
           />
+          </div>
         </motion.section>
       </div>
     </header>

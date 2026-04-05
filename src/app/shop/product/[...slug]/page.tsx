@@ -1,6 +1,3 @@
-import {
-  relatedProductData,
-} from "@/data/homepage";
 import ProductListSec from "@/components/common/ProductListSec";
 import BreadcrumbProduct from "@/components/product-page/BreadcrumbProduct";
 import Header from "@/components/product-page/Header";
@@ -11,10 +8,11 @@ import {
   absoluteUrl,
   SITE_NAME,
 } from "@/lib/site-config";
-import {
-  getProductById,
-  productDisplayPrice,
-} from "@/lib/products";
+import { getPublicCompanySettings } from "@/lib/company-settings";
+import { getProductById, listRelatedForProduct } from "@/lib/product-queries";
+import { productDisplayPrice } from "@/lib/product-mapper";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: { slug: string[] };
@@ -22,12 +20,19 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = Number(params.slug?.[0]);
-  const product = getProductById(id);
+  const product = Number.isFinite(id) ? await getProductById(id) : undefined;
   if (!product) {
     return { title: "Product" };
   }
 
-  const price = productDisplayPrice(product);
+  const company = await getPublicCompanySettings();
+  const cur = company.currency;
+  const price = productDisplayPrice(product, {
+    code: cur.code,
+    symbol: cur.symbol,
+    locale: cur.locale,
+    decimalPlaces: cur.decimalPlaces,
+  });
   const description = `${product.title} — ${price}. Shop quality fashion on Wearo.in with delivery across India. Rated ${product.rating.toFixed(1)} out of 5.`;
   const path = `/shop/product/${params.slug.join("/")}`;
 
@@ -64,12 +69,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ProductPage({ params }: Props) {
-  const productData = getProductById(Number(params.slug?.[0]));
+export default async function ProductPage({ params }: Props) {
+  const id = Number(params.slug?.[0]);
+  const productData = Number.isFinite(id) ? await getProductById(id) : undefined;
 
   if (!productData?.title) {
     notFound();
   }
+
+  const related = await listRelatedForProduct(id);
 
   return (
     <main>
@@ -82,7 +90,7 @@ export default function ProductPage({ params }: Props) {
         <Tabs />
       </div>
       <div className="mb-[50px] sm:mb-20">
-        <ProductListSec title="You might also like" data={relatedProductData} />
+        <ProductListSec title="You might also like" data={related} />
       </div>
     </main>
   );

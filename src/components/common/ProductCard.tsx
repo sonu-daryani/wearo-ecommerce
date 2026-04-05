@@ -1,17 +1,30 @@
+"use client";
+
 import React from "react";
 import Rating from "../ui/Rating";
 import Image from "next/image";
 import Link from "next/link";
 import { Product } from "@/types/product.types";
+import { ProductPriceDisplay } from "./ProductPriceDisplay";
 
 type ProductCardProps = {
   data: Product;
 };
 
+function pathSlug(data: Product) {
+  return (
+    data.slug ??
+    data.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+  );
+}
+
 const ProductCard = ({ data }: ProductCardProps) => {
   return (
     <Link
-      href={`/shop/product/${data.id}/${data.title.split(" ").join("-")}`}
+      href={`/shop/product/${data.id}/${pathSlug(data)}`}
       className="flex flex-col items-start aspect-auto"
     >
       <div className="bg-muted border border-border/60 shadow-sm rounded-[13px] lg:rounded-[20px] w-full lg:max-w-[295px] aspect-square mb-2.5 xl:mb-4 overflow-hidden">
@@ -22,6 +35,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
           className="rounded-md w-full h-full object-contain hover:scale-110 transition-all duration-500"
           alt={data.title}
           priority
+          unoptimized={data.srcUrl.startsWith("http")}
         />
       </div>
       <strong className="text-foreground xl:text-xl">{data.title}</strong>
@@ -39,44 +53,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
           <span className="text-muted-foreground">/5</span>
         </span>
       </div>
-      <div className="flex items-center space-x-[5px] xl:space-x-2.5">
-        {data.discount.percentage > 0 ? (
-          <span className="font-bold text-foreground text-xl xl:text-2xl">
-            {`$${Math.round(
-              data.price - (data.price * data.discount.percentage) / 100
-            )}`}
-          </span>
-        ) : data.discount.amount > 0 ? (
-          <span className="font-bold text-foreground text-xl xl:text-2xl">
-            {`$${data.price - data.discount.amount}`}
-          </span>
-        ) : (
-          <span className="font-bold text-foreground text-xl xl:text-2xl">
-            ${data.price}
-          </span>
-        )}
-        {data.discount.percentage > 0 && (
-          <span className="font-bold text-muted-foreground line-through text-xl xl:text-2xl">
-            ${data.price}
-          </span>
-        )}
-        {data.discount.amount > 0 && (
-          <span className="font-bold text-muted-foreground line-through text-xl xl:text-2xl">
-            ${data.price}
-          </span>
-        )}
-        {data.discount.percentage > 0 ? (
-          <span className="font-medium text-[10px] xl:text-xs py-1.5 px-3.5 rounded-full bg-[#FF3333]/10 text-[#FF3333]">
-            {`-${data.discount.percentage}%`}
-          </span>
-        ) : (
-          data.discount.amount > 0 && (
-            <span className="font-medium text-[10px] xl:text-xs py-1.5 px-3.5 rounded-full bg-[#FF3333]/10 text-[#FF3333]">
-              {`-$${data.discount.amount}`}
-            </span>
-          )
-        )}
-      </div>
+      <ProductPriceDisplay data={data} size="card" />
     </Link>
   );
 };

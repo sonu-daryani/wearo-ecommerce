@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 type Props = {
   googleAuthEnabled: boolean;
@@ -22,6 +23,12 @@ export function LoginForm({ googleAuthEnabled }: Props) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (registerOk) {
+      toast.success("Account created. You can sign in now.");
+    }
+  }, [registerOk]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -33,14 +40,19 @@ export function LoginForm({ googleAuthEnabled }: Props) {
         redirect: false,
       });
       if (res?.error) {
-        setError("Invalid email or password.");
+        const msg = "Invalid email or password.";
+        setError(msg);
+        toast.error(msg);
         setLoading(false);
         return;
       }
+      toast.success("Signed in");
       router.push(callbackUrl);
       router.refresh();
     } catch {
-      setError("Something went wrong.");
+      const msg = "Something went wrong.";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   }
@@ -51,12 +63,6 @@ export function LoginForm({ googleAuthEnabled }: Props) {
       <p className="text-muted-foreground text-sm mb-8">
         Welcome back to Wearo.in
       </p>
-
-      {registerOk && (
-        <p className="text-sm text-primary mb-4 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
-          Account created. You can sign in now.
-        </p>
-      )}
 
       {googleAuthEnabled && (
         <>

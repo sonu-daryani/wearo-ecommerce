@@ -31,6 +31,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   cmsDocuments  CmsDocument[]
+  orders        Order[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -84,4 +85,115 @@ model CmsDocument {
   author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+/// Homepage / layout image URLs (R2 or /public). Managed under Admin → Site images.
+model CmsSiteAsset {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  imageUrl  String
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id                   Int      @id @map("_id")
+  slug                 String   @unique
+  title                String
+  srcUrl               String
+  gallery              String[]
+  price                Float
+  discountAmount       Float    @default(0)
+  discountPercentage Float    @default(0)
+  rating               Float
+  sectionNewArrival    Boolean  @default(false)
+  sectionTopSelling    Boolean  @default(false)
+  sectionRelated       Boolean  @default(false)
+  published            Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+/// Singleton row: `key` is always `default`. Company branding, SEO, currency, payment toggles.
+model CompanySettings {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  key    String @unique
+  updatedAt DateTime @updatedAt
+
+  companyName     String
+  legalName       String?
+  supportEmail    String?
+  logoUrl         String?
+  metaTitle       String?
+  metaDescription String?
+  ogImageUrl      String?
+
+  currencyCode          String @default("INR")
+  currencySymbol        String @default("₹")
+  currencyLocale        String @default("en-IN")
+  currencyDecimalPlaces Int    @default(2)
+
+  payCod          Boolean @default(true)
+  payUpi          Boolean @default(false)
+  payCard         Boolean @default(false)
+  payWallet       Boolean @default(false)
+  payNetBanking   Boolean @default(false)
+
+  payTypeCodSelected Boolean @default(true)
+  payTypeOnlineSelected Boolean @default(true)
+  payOnlineEnabled Boolean @default(false)
+
+  codFeeFlat             Float   @default(0)
+  codFeePercent          Float   @default(0)
+  codWaiveFeeAboveAmount Float?
+
+  onlineProviders String[] @default([])
+
+  stripePublishableKey String?
+  razorpayKeyId        String?
+  cashfreeAppId        String?
+  paymentInstructions  String?
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+}
+
+enum OrderPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  AWAITING_COD
+}
+
+/// Storefront order (placed at checkout). `publicToken` is used on the confirmation page URL.
+model Order {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber String   @unique
+  publicToken String   @unique
+
+  status        OrderStatus        @default(CONFIRMED)
+  paymentStatus OrderPaymentStatus @default(AWAITING_COD)
+
+  paymentMethod   String
+  paymentProvider String?
+
+  currencyCode String
+
+  subtotal       Float
+  discountAmount Float @default(0)
+  codFee         Float @default(0)
+  grandTotal     Float
+
+  items    Json
+  shipping Json
+
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

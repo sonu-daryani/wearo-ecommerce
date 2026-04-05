@@ -4,7 +4,11 @@ import React from "react";
 import * as motion from "framer-motion/client";
 import DressStyleCard from "./DressStyleCard";
 
-const DressStyle = () => {
+type DressStyleProps = {
+  dressImageUrls: [string, string, string, string];
+};
+
+const DressStyle = ({ dressImageUrls }: DressStyleProps) => {
   return (
     <div className="px-4 xl:px-0">
       <section className="max-w-frame mx-auto bg-[#F0F0F0] px-6 pb-6 pt-10 md:p-[70px] rounded-[40px] text-center">
@@ -30,12 +34,14 @@ const DressStyle = () => {
           <DressStyleCard
             title="Casual"
             url="/shop#casual"
-            className="md:max-w-[260px] lg:max-w-[360px] xl:max-w-[407px] h-[190px] bg-[url('/images/dress-style-1.png')]"
+            imageUrl={dressImageUrls[0]}
+            className="md:max-w-[260px] lg:max-w-[360px] xl:max-w-[407px] h-[190px]"
           />
           <DressStyleCard
             title="Formal"
             url="/shop#formal"
-            className="md:max-w-[684px] h-[190px] bg-[url('/images/dress-style-2.png')]"
+            imageUrl={dressImageUrls[1]}
+            className="md:max-w-[684px] h-[190px]"
           />
         </motion.div>
         <motion.div
@@ -48,12 +54,14 @@ const DressStyle = () => {
           <DressStyleCard
             title="Party"
             url="/shop#party"
-            className="md:max-w-[684px] h-[190px] bg-[url('/images/dress-style-3.png')]"
+            imageUrl={dressImageUrls[2]}
+            className="md:max-w-[684px] h-[190px]"
           />
           <DressStyleCard
             title="Gym"
             url="/shop#gym"
-            className="md:max-w-[260px] lg:max-w-[360px] xl:max-w-[407px] h-[190px] bg-[url('/images/dress-style-4.png')]"
+            imageUrl={dressImageUrls[3]}
+            className="md:max-w-[260px] lg:max-w-[360px] xl:max-w-[407px] h-[190px]"
           />
         </motion.div>
       </section>

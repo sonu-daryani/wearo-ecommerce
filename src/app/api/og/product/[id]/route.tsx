@@ -3,16 +3,18 @@ import {
   SITE_DOMAIN,
   SITE_NAME,
 } from "@/lib/site-config";
-import { getProductById, productDisplayPrice } from "@/lib/products";
+import { getPublicCompanySettings } from "@/lib/company-settings";
+import { getProductById } from "@/lib/product-queries";
+import { productDisplayPrice } from "@/lib/product-mapper";
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 type Props = { params: { id: string } };
 
 export async function GET(_request: Request, { params }: Props) {
   const id = Number(params.id);
-  const product = Number.isFinite(id) ? getProductById(id) : undefined;
+  const product = Number.isFinite(id) ? await getProductById(id) : undefined;
 
   if (!product) {
     return new ImageResponse(
@@ -38,7 +40,14 @@ export async function GET(_request: Request, { params }: Props) {
   }
 
   const imageSrc = absoluteUrl(product.srcUrl);
-  const price = productDisplayPrice(product);
+  const company = await getPublicCompanySettings();
+  const cur = company.currency;
+  const price = productDisplayPrice(product, {
+    code: cur.code,
+    symbol: cur.symbol,
+    locale: cur.locale,
+    decimalPlaces: cur.decimalPlaces,
+  });
 
   return new ImageResponse(
     (

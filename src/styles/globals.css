@@ -86,3 +86,29 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Toastify — align with app theme */
+:root {
+  --toastify-color-success: #059669;
+  --toastify-color-error: #dc2626;
+  --toastify-color-warning: #d97706;
+  --toastify-color-info: #2563eb;
+  --toastify-font-family: inherit;
+  --toastify-text-color-success: #fff;
+  --toastify-text-color-error: #fff;
+  --toastify-text-color-warning: #fff;
+  --toastify-text-color-info: #fff;
+  --toastify-toast-width: 22rem;
+  --toastify-toast-min-height: 3.25rem;
+  --toastify-toast-bd-radius: 1rem;
+}
+
+.Toastify__toast {
+  box-shadow:
+    0 10px 40px -12px rgb(15 23 42 / 0.25),
+    0 0 0 1px rgb(15 23 42 / 0.06);
+}
+
+.Toastify__progress-bar {
+  border-radius: 0 0 1rem 1rem;
+}

@@ -3,16 +3,22 @@ import Brands from "@/components/homepage/Brands";
 import DressStyle from "@/components/homepage/DressStyle";
 import Header from "@/components/homepage/Header";
 import Reviews from "@/components/homepage/Reviews";
-import {
-  newArrivalsData,
-  reviewsData,
-  topSellingData,
-} from "@/data/homepage";
+import { reviewsData } from "@/data/homepage";
+import { listNewArrivals, listTopSelling } from "@/lib/product-queries";
+import { getHomepageVisuals } from "@/lib/site-assets";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [newArrivalsData, topSellingData, visuals] = await Promise.all([
+    listNewArrivals(),
+    listTopSelling(),
+    getHomepageVisuals(),
+  ]);
+
   return (
     <>
-      <Header />
+      <Header heroDesktopUrl={visuals.heroDesktop} heroMobileUrl={visuals.heroMobile} />
       <Brands />
       <main className="my-[50px] sm:my-[72px]">
         <ProductListSec
@@ -31,7 +37,7 @@ export default function Home() {
           />
         </div>
         <div className="mb-[50px] sm:mb-20">
-          <DressStyle />
+          <DressStyle dressImageUrls={visuals.dressStyle} />
         </div>
         <Reviews data={reviewsData} />
       </main>

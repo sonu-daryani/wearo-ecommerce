@@ -13,8 +13,10 @@ import React from "react";
 import { RootState } from "@/lib/store";
 import { useAppSelector } from "@/lib/hooks/redux";
 import Link from "next/link";
+import { useCompanyCurrency } from "@/context/CompanyCurrencyContext";
 
 export default function CartPage() {
+  const { formatPrice } = useCompanyCurrency();
   const { cart, totalPrice, adjustedTotalPrice } = useAppSelector(
     (state: RootState) => state.carts
   );
@@ -51,7 +53,7 @@ export default function CartPage() {
                 <div className="flex flex-col space-y-5">
                   <div className="flex items-center justify-between">
                     <span className="md:text-xl text-black/60">Subtotal</span>
-                    <span className="md:text-xl font-bold">${totalPrice}</span>
+                    <span className="md:text-xl font-bold">{formatPrice(totalPrice)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="md:text-xl text-black/60">
@@ -62,7 +64,7 @@ export default function CartPage() {
                       %)
                     </span>
                     <span className="md:text-xl font-bold text-red-600">
-                      -${Math.round(totalPrice - adjustedTotalPrice)}
+                      -{formatPrice(Math.round(totalPrice - adjustedTotalPrice))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -75,7 +77,7 @@ export default function CartPage() {
                   <div className="flex items-center justify-between">
                     <span className="md:text-xl text-black">Total</span>
                     <span className="text-xl md:text-2xl font-bold">
-                      ${Math.round(adjustedTotalPrice)}
+                      {formatPrice(Math.round(adjustedTotalPrice))}
                     </span>
                   </div>
                 </div>
@@ -100,10 +102,13 @@ export default function CartPage() {
                 </div>
                 <Button
                   type="button"
+                  asChild
                   className="text-sm md:text-base font-medium bg-black rounded-full w-full py-4 h-[54px] md:h-[60px] group"
                 >
-                  Go to Checkout{" "}
-                  <FaArrowRight className="text-xl ml-2 group-hover:translate-x-1 transition-all" />
+                  <Link href="/checkout">
+                    Go to Checkout{" "}
+                    <FaArrowRight className="text-xl ml-2 group-hover:translate-x-1 transition-all inline" />
+                  </Link>
                 </Button>
               </div>
             </div>

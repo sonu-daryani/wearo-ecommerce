@@ -10,12 +10,8 @@ import {
 import MobileFilters from "@/components/shop-page/filters/MobileFilters";
 import Filters from "@/components/shop-page/filters";
 import { FiSliders } from "react-icons/fi";
-import {
-  newArrivalsData,
-  relatedProductData,
-  topSellingData,
-} from "@/data/homepage";
 import ProductCard from "@/components/common/ProductCard";
+import { listPublishedProducts } from "@/lib/product-queries";
 import {
   Pagination,
   PaginationContent,
@@ -34,6 +30,8 @@ import {
 } from "@/lib/site-config";
 
 type ShopSearchParams = { category?: string; style?: string };
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   searchParams,
@@ -84,15 +82,18 @@ export async function generateMetadata({
   };
 }
 
-export default function ShopPage({
+export default async function ShopPage({
   searchParams,
 }: {
   searchParams: ShopSearchParams;
 }) {
+  const products = await listPublishedProducts();
   const heading = buildShopTitle(
     searchParams.category ?? null,
     searchParams.style ?? null
   );
+  const total = products.length;
+  const showing = total === 0 ? "0" : `1-${total}`;
 
   return (
     <main className="pb-20">
@@ -115,7 +116,7 @@ export default function ShopPage({
               </div>
               <div className="flex flex-col sm:items-center sm:flex-row">
                 <span className="text-sm md:text-base text-black/60 mr-3">
-                  Showing 1-10 of 100 Products
+                  Showing {showing} of {total} product{total === 1 ? "" : "s"}
                 </span>
                 <div className="flex items-center">
                   Sort by:{" "}
@@ -133,11 +134,7 @@ export default function ShopPage({
               </div>
             </div>
             <div className="w-full grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-              {[
-                ...relatedProductData.slice(1, 4),
-                ...newArrivalsData.slice(1, 4),
-                ...topSellingData.slice(1, 4),
-              ].map((product) => (
+              {products.map((product) => (
                 <ProductCard key={product.id} data={product} />
               ))}
             </div>

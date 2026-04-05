@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
 type Props = {
   googleAuthEnabled: boolean;
@@ -34,14 +35,18 @@ export function RegisterForm({ googleAuthEnabled }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Registration failed.");
+        const msg = typeof data.error === "string" ? data.error : "Registration failed.";
+        setError(msg);
+        toast.error(msg);
         setLoading(false);
         return;
       }
       router.push("/auth/login?registered=1");
       router.refresh();
     } catch {
-      setError("Something went wrong.");
+      const msg = "Something went wrong.";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   }

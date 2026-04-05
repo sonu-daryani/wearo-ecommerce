@@ -1,3 +1,4 @@
+import { AccountOrdersSection } from "@/components/account/AccountOrdersSection";
 import { auth } from "@/auth";
 import SignOutButton from "@/components/auth/SignOutButton";
 import Link from "next/link";
@@ -47,17 +48,23 @@ export default async function AccountPage() {
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Access role</p>
           <p className="text-foreground font-medium">{ROLE_LABELS[role]}</p>
         </div>
-        {staff && (
-          <Link
-            href="/admin"
+        {staff && process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL?.trim() && (
+          <a
+            href={process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL.replace(/\/$/, "")}
             className="inline-flex rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            Admin / CMS
-          </Link>
+            Admin portal
+          </a>
         )}
         <div className="pt-4">
           <SignOutButton />
         </div>
+      </div>
+
+      <div className="mt-12 max-w-3xl">
+        <AccountOrdersSection userId={user.id!} />
       </div>
 
       <p className="mt-10">

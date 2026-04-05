@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   Accordion,
@@ -6,8 +8,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Slider } from "@/components/ui/slider";
+import { useCompanyCurrency } from "@/context/CompanyCurrencyContext";
 
 const PriceSection = () => {
+  const { currency } = useCompanyCurrency();
   return (
     <Accordion type="single" collapsible defaultValue="filter-price">
       <AccordionItem value="filter-price" className="border-none">
@@ -20,7 +24,7 @@ const PriceSection = () => {
             min={0}
             max={250}
             step={1}
-            label="$"
+            label={currency.symbol}
           />
           <div className="mb-3" />
         </AccordionContent>
