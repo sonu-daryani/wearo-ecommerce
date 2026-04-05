@@ -110,14 +110,6 @@ const Footer = () => {
               >
                 Sonu Daryani
               </Link>
-              {", "}
-              Designed by{" "}
-              <Link
-                href="https://www.figma.com/@hamzauix"
-                className="text-black font-medium"
-              >
-                Hamza Naeem
-              </Link>
             </p>
             <div className="flex items-center">
               {paymentBadgesData.map((badge, _, arr) => (

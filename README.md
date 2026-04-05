@@ -2,14 +2,12 @@
 
 **Wearo.in** is a responsive e-commerce storefront built with **Next.js 14** (App Router), **TypeScript**, **Tailwind CSS**, **Redux Toolkit**, **Framer Motion**, and **shadcn/ui**-style components. This repo is maintained by **Sonu Daryani** and includes a customized theme (colors, backgrounds, and card styling).
 
-**[Live reference demo](https://next-ecommerce-shopco.vercel.app/)** (original upstream deployment)
-
 ---
 
 ## Quick start
 
 ```bash
-git clone https://github.com/sonudaryani/shopco-ecommerce.git
+git clone https://github.com/sonu-daryani/wearo-india.git
 cd shopco-ecommerce
 npm install
 npm run dev
@@ -64,12 +62,6 @@ shopco-ecommerce/
 
 ---
 
-## Design credit
-
-UI is based on a community [Figma e-commerce template](https://www.figma.com/community/file/1273571982885059508/e-commerce-website-template-freebie) by [Hamza Naeem](https://www.figma.com/@hamzauix). Upstream implementation inspiration: [next-ecommerce-shopco](https://github.com/mohammadoftadeh/next-ecommerce-shopco).
-
----
-
 ## License
 
 [MIT](LICENSE)
@@ -78,4 +70,4 @@ UI is based on a community [Figma e-commerce template](https://www.figma.com/com
 
 ## Maintainer
 
-**Sonu Daryani** — [GitHub @sonudaryani](https://github.com/sonudaryani)
+**Sonu Daryani** — [GitHub @sonudaryani](https://github.com/sonu-daryani)
