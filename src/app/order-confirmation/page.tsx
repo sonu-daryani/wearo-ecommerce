@@ -129,6 +129,7 @@ function OrderConfirmationInner() {
   }
 
   const paidOnline = order.paymentMethod === "online" && order.paymentStatus === "PAID";
+  const failedOnline = order.paymentMethod === "online" && order.paymentStatus === "FAILED";
   const cod = order.paymentMethod === "cod";
 
   return (
@@ -150,6 +151,7 @@ function OrderConfirmationInner() {
           <p className="text-black/60 text-sm md:text-base">
             {paidOnline && "Your payment was successful. We've received your order."}
             {cod && "Your order is confirmed. Pay with cash when your package arrives."}
+            {failedOnline && "Payment failed. This checkout was not completed."}
             {!paidOnline && !cod && "We've received your order."}
           </p>
           <p className="mt-4 text-lg font-semibold text-black">
@@ -176,7 +178,11 @@ function OrderConfirmationInner() {
           <section className="rounded-2xl border border-black/8 bg-white p-6 shadow-sm space-y-3">
             <h2 className="font-bold text-black">Payment</h2>
             <p className="text-sm text-black/80">
-              {order.paymentMethod === "cod" ? "Cash on delivery" : "Paid online"}
+              {order.paymentMethod === "cod"
+                ? "Cash on delivery"
+                : failedOnline
+                  ? "Online payment failed"
+                  : "Paid online"}
               {order.paymentProvider ? (
                 <>
                   <br />

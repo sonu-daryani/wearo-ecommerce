@@ -1,5 +1,6 @@
 import { API_MESSAGES } from "@/lib/api/api-messages";
 import { mergeCompanySettingsSecrets } from "@/lib/company-settings-secret-overlay";
+import { isPaymentProviderId } from "@/lib/payments/types";
 import prisma from "@/lib/prisma";
 import { DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/site-config";
 import type { CompanySettings } from "@prisma/client";
@@ -34,21 +35,24 @@ export type PublicCompanySettings = {
     };
     onlineProviders: string[];
   };
-  stripePublishableKey: string | null;
-  razorpayKeyId: string | null;
   cashfreeAppId: string | null;
   /** Per-provider: publishable/app id + secret saved in company settings (same DB). */
   paymentProviderReadiness: {
-    STRIPE: boolean;
-    RAZORPAY: boolean;
     CASHFREE: boolean;
+    RAZORPAY: boolean;
+    PAYTM: boolean;
+    PHONEPE: boolean;
+    PAYU: boolean;
   };
   paymentInstructions: string | null;
   /** Checkout copy from server (`api-messages.ts`); use for client-side toasts before POST. */
   checkoutUi: typeof API_MESSAGES.CHECKOUT_UI;
+  theme: Record<string, string> | null;
 };
 
 function mapRow(row: CompanySettings) {
+  const onlineProviders = (row.onlineProviders ?? []).filter(isPaymentProviderId);
+  const themeRaw = (row as unknown as { theme?: unknown }).theme;
   const typeCod = row.payTypeCodSelected ?? true;
   const typeOnline = row.payTypeOnlineSelected ?? true;
   const codAvailable = typeCod && row.payCod;
@@ -80,18 +84,22 @@ function mapRow(row: CompanySettings) {
         wallet: row.payWallet,
         netBanking: row.payNetBanking,
       },
-      onlineProviders: row.onlineProviders ?? [],
+      onlineProviders,
     },
-    stripePublishableKey: row.stripePublishableKey,
-    razorpayKeyId: row.razorpayKeyId,
     cashfreeAppId: row.cashfreeAppId ?? null,
     paymentProviderReadiness: {
-      STRIPE: !!(row.stripePublishableKey?.trim() && row.stripeSecretKey?.trim()),
-      RAZORPAY: !!(row.razorpayKeyId?.trim() && row.razorpayKeySecret?.trim()),
       CASHFREE: !!(row.cashfreeAppId?.trim() && row.cashfreeClientSecret?.trim()),
+      RAZORPAY: !!(row.razorpayKeyId?.trim() && row.razorpayKeySecret?.trim()),
+      PAYTM: !!(row.paytmMerchantId?.trim() && row.paytmMerchantKey?.trim()),
+      PHONEPE: !!(row.phonepeMerchantId?.trim() && row.phonepeSaltKey?.trim()),
+      PAYU: !!(row.payuMerchantKey?.trim() && row.payuSalt?.trim()),
     },
     paymentInstructions: row.paymentInstructions,
     checkoutUi: API_MESSAGES.CHECKOUT_UI,
+    theme:
+      themeRaw && typeof themeRaw === "object" && !Array.isArray(themeRaw)
+        ? (themeRaw as Record<string, string>)
+        : null,
   } satisfies PublicCompanySettings;
 }
 
@@ -123,17 +131,33 @@ const FALLBACK: PublicCompanySettings = {
     },
     onlineProviders: [],
   },
-  stripePublishableKey: null,
-  razorpayKeyId: null,
   cashfreeAppId: null,
   paymentProviderReadiness: {
-    STRIPE: false,
-    RAZORPAY: false,
     CASHFREE: false,
+    RAZORPAY: false,
+    PAYTM: false,
+    PHONEPE: false,
+    PAYU: false,
   },
   paymentInstructions: null,
   checkoutUi: API_MESSAGES.CHECKOUT_UI,
+  theme: null,
 };
+
+/** Map `content.*` theme keys to `data-editor-key` ids for SSR text. */
+export function themeContentMap(
+  theme: Record<string, string> | null | undefined
+): Record<string, string> {
+  if (!theme) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(theme)) {
+    if (!k.startsWith("content.") || typeof v !== "string") continue;
+    const t = v.trim();
+    if (!t) continue;
+    out[k.slice("content.".length)] = t;
+  }
+  return out;
+}
 
 /** Public-safe payload for the storefront (and JSON API). */
 export async function getPublicCompanySettings(): Promise<PublicCompanySettings> {

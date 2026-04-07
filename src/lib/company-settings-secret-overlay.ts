@@ -4,9 +4,13 @@ import prisma from "@/lib/prisma";
 const KEY = "default";
 
 type SecretOverlay = {
+  cashfreeClientSecret: string | null;
+  paytmMerchantKey: string | null;
+  phonepeSaltKey: string | null;
+  payuMerchantKey: string | null;
+  payuSalt: string | null;
   stripeSecretKey: string | null;
   razorpayKeySecret: string | null;
-  cashfreeClientSecret: string | null;
 };
 
 function parseFindRawFirstDoc(raw: unknown): Record<string, unknown> | null {
@@ -35,30 +39,58 @@ async function loadSecretOverlay(): Promise<SecretOverlay> {
       filter: { key: KEY },
       options: {
         projection: {
+          cashfreeClientSecret: true,
+          paytmMerchantKey: true,
+          phonepeSaltKey: true,
+          payuMerchantKey: true,
+          payuSalt: true,
           stripeSecretKey: true,
           razorpayKeySecret: true,
-          cashfreeClientSecret: true,
         },
         limit: 1,
       },
     });
     const doc = parseFindRawFirstDoc(raw);
     if (!doc) {
-      return { stripeSecretKey: null, razorpayKeySecret: null, cashfreeClientSecret: null };
+      return {
+        cashfreeClientSecret: null,
+        paytmMerchantKey: null,
+        phonepeSaltKey: null,
+        payuMerchantKey: null,
+        payuSalt: null,
+        stripeSecretKey: null,
+        razorpayKeySecret: null,
+      };
     }
     return {
+      cashfreeClientSecret: strField(doc.cashfreeClientSecret),
+      paytmMerchantKey: strField(doc.paytmMerchantKey),
+      phonepeSaltKey: strField(doc.phonepeSaltKey),
+      payuMerchantKey: strField(doc.payuMerchantKey),
+      payuSalt: strField(doc.payuSalt),
       stripeSecretKey: strField(doc.stripeSecretKey),
       razorpayKeySecret: strField(doc.razorpayKeySecret),
-      cashfreeClientSecret: strField(doc.cashfreeClientSecret),
     };
   } catch {
-    return { stripeSecretKey: null, razorpayKeySecret: null, cashfreeClientSecret: null };
+    return {
+      cashfreeClientSecret: null,
+      paytmMerchantKey: null,
+      phonepeSaltKey: null,
+      payuMerchantKey: null,
+      payuSalt: null,
+      stripeSecretKey: null,
+      razorpayKeySecret: null,
+    };
   }
 }
 
 function needsSecretOverlay(row: CompanySettings): boolean {
   return (
     (!!row.cashfreeAppId?.trim() && !row.cashfreeClientSecret?.trim()) ||
+    (!!row.paytmMerchantId?.trim() && !row.paytmMerchantKey?.trim()) ||
+    (!!row.phonepeMerchantId?.trim() && !row.phonepeSaltKey?.trim()) ||
+    ((!!row.payuMerchantKey?.trim() && !row.payuSalt?.trim()) ||
+      (!!row.payuSalt?.trim() && !row.payuMerchantKey?.trim())) ||
     (!!row.stripePublishableKey?.trim() && !row.stripeSecretKey?.trim()) ||
     (!!row.razorpayKeyId?.trim() && !row.razorpayKeySecret?.trim())
   );
@@ -72,8 +104,12 @@ export async function mergeCompanySettingsSecrets(row: CompanySettings): Promise
   const o = await loadSecretOverlay();
   return {
     ...row,
+    cashfreeClientSecret: row.cashfreeClientSecret?.trim() || o.cashfreeClientSecret,
+    paytmMerchantKey: row.paytmMerchantKey?.trim() || o.paytmMerchantKey,
+    phonepeSaltKey: row.phonepeSaltKey?.trim() || o.phonepeSaltKey,
+    payuMerchantKey: row.payuMerchantKey?.trim() || o.payuMerchantKey,
+    payuSalt: row.payuSalt?.trim() || o.payuSalt,
     stripeSecretKey: row.stripeSecretKey?.trim() || o.stripeSecretKey,
     razorpayKeySecret: row.razorpayKeySecret?.trim() || o.razorpayKeySecret,
-    cashfreeClientSecret: row.cashfreeClientSecret?.trim() || o.cashfreeClientSecret,
   };
 }

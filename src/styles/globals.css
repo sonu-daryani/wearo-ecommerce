@@ -49,6 +49,13 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.75rem;
+    /* Block surfaces (overridable via Admin theme) */
+    --banner-bg: 0 0% 0%;
+    --banner-fg: 0 0% 100%;
+    --navbar-bg: 0 0% 100%;
+    --navbar-fg: 222 47% 11%;
+    --footer-bar-bg: 220 14% 96%;
+    --hero-bg: 330 18% 94%;
   }
   .dark {
     --background: 224 40% 8%;

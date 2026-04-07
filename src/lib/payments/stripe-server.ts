@@ -1,5 +1,4 @@
 import Stripe from "stripe";
-import type { Order } from "@prisma/client";
 
 function stripeClient(secretKey: string): Stripe {
   return new Stripe(secretKey, { apiVersion: "2025-02-24.acacia" });
@@ -31,8 +30,12 @@ export function amountToStripeUnit(amount: number, currencyCode: string): number
 }
 
 export async function stripeCreateCheckoutSession(params: {
-  order: Order;
+  orderNumber: string;
   publicToken: string;
+  checkoutToken: string;
+  customerEmail?: string;
+  grandTotal: number;
+  currencyCode: string;
   companyName: string;
   origin: string;
   stripeSecretKey: string;
@@ -43,16 +46,13 @@ export async function stripeCreateCheckoutSession(params: {
   }
   const stripe = stripeClient(sk);
 
-  const shipping = params.order.shipping as {
-    email?: string;
-  };
-  const email = String(shipping.email ?? "").trim();
-  const unitAmount = amountToStripeUnit(params.order.grandTotal, params.order.currencyCode);
+  const email = String(params.customerEmail ?? "").trim();
+  const unitAmount = amountToStripeUnit(params.grandTotal, params.currencyCode);
   if (unitAmount < 1) {
     return { ok: false, error: "Order amount is too small for Stripe Checkout." };
   }
 
-  const successUrl = `${params.origin}/checkout/payment-return?token=${encodeURIComponent(params.publicToken)}&provider=STRIPE&session_id={CHECKOUT_SESSION_ID}`;
+  const successUrl = `${params.origin}/checkout/payment-return?token=${encodeURIComponent(params.publicToken)}&provider=STRIPE&checkoutToken=${encodeURIComponent(params.checkoutToken)}&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${params.origin}/checkout?payment=cancelled`;
 
   try {
@@ -63,16 +63,16 @@ export async function stripeCreateCheckoutSession(params: {
       cancel_url: cancelUrl,
       metadata: {
         publicToken: params.publicToken,
-        orderNumber: params.order.orderNumber,
+        orderNumber: params.orderNumber,
       },
       line_items: [
         {
           quantity: 1,
           price_data: {
-            currency: params.order.currencyCode.toLowerCase(),
+            currency: params.currencyCode.toLowerCase(),
             unit_amount: unitAmount,
             product_data: {
-              name: `Order ${params.order.orderNumber}`,
+              name: `Order ${params.orderNumber}`,
               description: params.companyName.slice(0, 120),
             },
           },

@@ -1,3 +1,4 @@
+import { EditableHtml } from "@/components/editor/EditableHtml";
 import { Button } from "@/components/ui/button";
 import InputGroup from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
@@ -5,16 +6,35 @@ import { integralCF } from "@/styles/fonts";
 import Image from "next/image";
 import React from "react";
 
-const NewsLetterSection = () => {
+type NewsLetterSectionProps = {
+  contentText?: Record<string, string>;
+};
+
+const NEWSLETTER_HEADING_FALLBACK =
+  "STAY UP TO DATE ABOUT OUR LATEST OFFERS";
+const NEWSLETTER_EMAIL_PLACEHOLDER_FALLBACK = "Enter your email address";
+const NEWSLETTER_CTA_FALLBACK = "Subscribe to Newsletter";
+
+const NewsLetterSection = ({ contentText = {} }: NewsLetterSectionProps) => {
+  const emailPlaceholder =
+    contentText.newsletterEmailPlaceholder?.trim() ||
+    NEWSLETTER_EMAIL_PLACEHOLDER_FALLBACK;
   return (
-    <div className="relative grid grid-cols-1 md:grid-cols-2 py-9 md:py-11 px-6 md:px-16 max-w-frame mx-auto bg-black rounded-[20px]">
+    <div
+      className="relative grid grid-cols-1 md:grid-cols-2 py-9 md:py-11 px-6 md:px-16 max-w-frame mx-auto bg-black rounded-[20px]"
+      data-editor-block="newsletter"
+    >
       <p
         className={cn([
           integralCF.className,
           "font-bold text-[32px] md:text-[40px] text-white mb-9 md:mb-0",
         ])}
       >
-        STAY UP TO DATE ABOUT OUR LATEST OFFERS
+        <EditableHtml
+          editorKey="newsletterHeading"
+          storedHtml={contentText.newsletterHeading}
+          fallbackPlain={NEWSLETTER_HEADING_FALLBACK}
+        />
       </p>
       <div className="flex items-center">
         <div className="flex flex-col w-full max-w-[349px] mx-auto">
@@ -32,7 +52,7 @@ const NewsLetterSection = () => {
             <InputGroup.Input
               type="email"
               name="email"
-              placeholder="Enter your email address"
+              placeholder={emailPlaceholder}
               className="bg-transparent placeholder:text-black/40 placeholder:text-sm sm:placeholder:text-base"
             />
           </InputGroup>
@@ -42,7 +62,11 @@ const NewsLetterSection = () => {
             aria-label="Subscribe to Newsletter"
             type="button"
           >
-            Subscribe to Newsletter
+            <EditableHtml
+              editorKey="newsletterCta"
+              storedHtml={contentText.newsletterCta}
+              fallbackPlain={NEWSLETTER_CTA_FALLBACK}
+            />
           </Button>
         </div>
       </div>

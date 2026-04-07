@@ -1,3 +1,4 @@
+import { EditableHtml } from "@/components/editor/EditableHtml";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import React from "react";
@@ -7,9 +8,11 @@ type DressStyleCardProps = {
   url: string;
   imageUrl: string;
   className?: string;
+  titleKey?: string;
+  contentText?: Record<string, string>;
 };
 
-const DressStyleCard = ({ title, url, imageUrl, className }: DressStyleCardProps) => {
+const DressStyleCard = ({ title, url, imageUrl, className, titleKey, contentText = {} }: DressStyleCardProps) => {
   return (
     <Link
       href={url}
@@ -19,7 +22,11 @@ const DressStyleCard = ({ title, url, imageUrl, className }: DressStyleCardProps
         className,
       ])}
     >
-      {title}
+      {titleKey ? (
+        <EditableHtml editorKey={titleKey} storedHtml={contentText[titleKey]} fallbackPlain={title} />
+      ) : (
+        title
+      )}
     </Link>
   );
 };

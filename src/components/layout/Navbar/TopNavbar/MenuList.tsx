@@ -8,18 +8,25 @@ import {
   NavigationMenuLink,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { EditableHtml } from "@/components/editor/EditableHtml";
 import { MenuListData } from "../navbar.types";
 
 export type MenuListProps = {
   data: MenuListData;
   label: string;
+  labelKey?: string;
+  contentText?: Record<string, string>;
 };
 
-export function MenuList({ data, label }: MenuListProps) {
+export function MenuList({ data, label, labelKey, contentText = {} }: MenuListProps) {
   return (
     <NavigationMenuItem>
       <NavigationMenuTrigger className="font-normal px-3">
-        {label}
+        {labelKey ? (
+          <EditableHtml editorKey={labelKey} storedHtml={contentText[labelKey]} fallbackPlain={label} />
+        ) : (
+          label
+        )}
       </NavigationMenuTrigger>
       <NavigationMenuContent>
         <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">

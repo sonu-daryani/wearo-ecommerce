@@ -7,11 +7,16 @@ import type { Role } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
 const googleConfigured =
-  Boolean(process.env.AUTH_GOOGLE_ID) &&
-  Boolean(process.env.AUTH_GOOGLE_SECRET);
+  Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
+  Boolean(process.env.AUTH_GOOGLE_SECRET?.trim());
+
+/** Required in production; without it every /api/auth/* route returns 500 "server configuration". */
+const authSecret =
+  (process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET)?.trim() || undefined;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  secret: authSecret,
   adapter: PrismaAdapter(prisma),
   providers: [
     ...(googleConfigured

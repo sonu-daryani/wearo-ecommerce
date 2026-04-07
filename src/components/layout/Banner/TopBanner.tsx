@@ -1,14 +1,34 @@
+import { EditableHtml } from "@/components/editor/EditableHtml";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
-const TopBanner = () => {
+const DEFAULT_TOP_BANNER =
+  "Sign up and get 20% off to your first order.";
+
+type TopBannerProps = {
+  /** From Admin theme `content.topBannerMessage` (SSR). */
+  contentText?: Record<string, string>;
+};
+
+const TopBanner = ({ contentText }: TopBannerProps) => {
   return (
-    <div className="bg-black text-white text-center py-2 px-2 sm:px-4 xl:px-0">
+    <div
+      className="text-center py-2 px-2 sm:px-4 xl:px-0"
+      style={{
+        backgroundColor: "hsl(var(--banner-bg))",
+        color: "hsl(var(--banner-fg))",
+      }}
+      data-editor-block="topBanner"
+    >
       <div className="relative max-w-frame mx-auto">
         <p className="text-xs sm:text-sm">
-          Sign up and get 20% off to your first order.{" "}
+          <EditableHtml
+            editorKey="topBannerMessage"
+            storedHtml={contentText?.topBannerMessage}
+            fallbackPlain={DEFAULT_TOP_BANNER}
+          />{" "}
           <Link href="#" className="underline font-medium">
             Sign Up Now
           </Link>

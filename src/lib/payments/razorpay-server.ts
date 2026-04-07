@@ -1,5 +1,4 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import type { Order } from "@prisma/client";
 import { amountToStripeUnit } from "@/lib/payments/stripe-server";
 
 function authHeader(keyId: string, keySecret: string): string {
@@ -7,25 +6,27 @@ function authHeader(keyId: string, keySecret: string): string {
 }
 
 export async function razorpayCreateOrder(params: {
-  order: Order;
+  orderNumber: string;
+  grandTotal: number;
+  currencyCode: string;
   publicToken: string;
   keyId: string;
   keySecret: string;
 }): Promise<
   { ok: true; razorpayOrderId: string; amount: number; currency: string } | { ok: false; error: string }
 > {
-  const amount = amountToStripeUnit(params.order.grandTotal, params.order.currencyCode);
+  const amount = amountToStripeUnit(params.grandTotal, params.currencyCode);
   if (amount < 1) {
     return { ok: false, error: "Order amount is too small for Razorpay." };
   }
 
   const body = {
     amount,
-    currency: params.order.currencyCode.toUpperCase(),
-    receipt: params.order.orderNumber.slice(0, 40),
+    currency: params.currencyCode.toUpperCase(),
+    receipt: params.orderNumber.slice(0, 40),
     notes: {
       publicToken: params.publicToken,
-      orderNumber: params.order.orderNumber,
+      orderNumber: params.orderNumber,
     },
   };
 
@@ -54,7 +55,7 @@ export async function razorpayCreateOrder(params: {
     ok: true,
     razorpayOrderId: id,
     amount,
-    currency: params.order.currencyCode.toUpperCase(),
+    currency: params.currencyCode.toUpperCase(),
   };
 }
 

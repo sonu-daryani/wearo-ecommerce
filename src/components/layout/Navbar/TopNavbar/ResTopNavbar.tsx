@@ -19,7 +19,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const ResTopNavbar = ({ data }: { data: NavMenu }) => {
+const ResTopNavbar = ({
+  data,
+  brandLabel = "Wearo.in",
+}: {
+  data: NavMenu;
+  brandLabel?: string;
+}) => {
   return (
     <Sheet>
       <SheetTrigger asChild className="cursor-pointer">
@@ -37,7 +43,7 @@ const ResTopNavbar = ({ data }: { data: NavMenu }) => {
           <SheetTitle asChild>
             <SheetClose asChild>
               <Link href="/" className={cn([integralCF.className, "text-2xl"])}>
-                Wearo.in
+                {brandLabel}
               </Link>
             </SheetClose>
           </SheetTitle>

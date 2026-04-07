@@ -15,12 +15,21 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { FaArrowLeft } from "react-icons/fa6";
-import { FaCreditCard, FaMoneyBillWave } from "react-icons/fa6";
-import { loadCashfreeJs, openCashfreeModal } from "@/lib/cashfree-checkout";
-import type { PaymentSessionPayload } from "@/lib/payments/types";
-import { loadRazorpayScript, openRazorpayCheckout } from "@/lib/razorpay-checkout";
+import { FaMoneyBillWave } from "react-icons/fa6";
+import { SiPaytm, SiPhonepe, SiRazorpay } from "react-icons/si";
+import type {
+  CashfreeSessionPayload,
+  PaymentSessionPayload,
+  PayuSessionPayload,
+  RazorpaySessionPayload,
+} from "@/lib/payments/types";
+import { getCashfreeFactory, loadCashfreeScript } from "@/lib/payments/load-cashfree-script";
+import { loadRazorpayScript, openRazorpayCheckout } from "@/lib/payments/load-razorpay-script";
 import { useApiLoading } from "@/hooks/use-api-loading";
 import { getPlain, postEnvelope } from "@/lib/http/request-handler";
+import { useCompanyCurrency } from "@/context/CompanyCurrencyContext";
+import type { Product } from "@/types/product.types";
+import ProductCard from "@/components/common/ProductCard";
 
 function formatMoney(amount: number, currency: PublicCompanySettings["currency"]) {
   try {
@@ -47,32 +56,116 @@ function codFeeForSubtotal(
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
-  STRIPE: "Stripe",
-  RAZORPAY: "Razorpay",
   CASHFREE: "Cashfree",
+  RAZORPAY: "Razorpay",
+  PAYTM: "Paytm",
+  PHONEPE: "PhonePe",
+  PAYU: "PayU",
 };
+
+function channelDetailLine(ch: PublicCompanySettings["checkout"]["onlineChannels"]): string {
+  const parts: string[] = [];
+  if (ch.upi) parts.push("UPI");
+  if (ch.card) parts.push("Debit & credit cards");
+  if (ch.wallet) parts.push("Wallets");
+  if (ch.netBanking) parts.push("Net banking");
+  return parts.length > 0 ? parts.join(" · ") : "Cards, UPI & more";
+}
+
+function ProviderLogo({ provider }: { provider: string }) {
+  const wrap =
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-black/[0.08] bg-white shadow-sm";
+  switch (provider) {
+    case "RAZORPAY":
+      return (
+        <span className={wrap}>
+          <SiRazorpay className="h-7 w-7 text-[#0C2451]" aria-hidden />
+        </span>
+      );
+    case "PAYTM":
+      return (
+        <span className={wrap}>
+          <SiPaytm className="h-7 w-7 text-[#00BAF2]" aria-hidden />
+        </span>
+      );
+    case "PHONEPE":
+      return (
+        <span className={wrap}>
+          <SiPhonepe className="h-7 w-7 text-[#5F259F]" aria-hidden />
+        </span>
+      );
+    case "CASHFREE":
+      return (
+        <span
+          className={`${wrap} bg-[#00B8A9]/10 border-[#00B8A9]/25 font-bold text-sm text-[#00796B]`}
+          aria-hidden
+        >
+          CF
+        </span>
+      );
+    case "PAYU":
+      return (
+        <span
+          className={`${wrap} bg-amber-50 border-amber-200/80 font-bold text-xs tracking-tight text-amber-900`}
+          aria-hidden
+        >
+          PayU
+        </span>
+      );
+    default:
+      return (
+        <span
+          className={`${wrap} bg-neutral-100 text-neutral-600 text-xs font-semibold`}
+          aria-hidden
+        >
+          Pay
+        </span>
+      );
+  }
+}
 
 function isProviderServerReady(company: PublicCompanySettings, provider: string): boolean {
   const r = company.paymentProviderReadiness;
-  if (provider === "STRIPE") return r.STRIPE;
-  if (provider === "RAZORPAY") return r.RAZORPAY;
   if (provider === "CASHFREE") return r.CASHFREE;
+  if (provider === "RAZORPAY") return r.RAZORPAY;
+  if (provider === "PAYTM") return r.PAYTM;
+  if (provider === "PHONEPE") return r.PHONEPE;
+  if (provider === "PAYU") return r.PAYU;
   return false;
+}
+
+function submitPayuHostedForm(actionUrl: string, fields: Record<string, string>) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = actionUrl;
+  form.style.display = "none";
+  for (const [name, value] of Object.entries(fields)) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+  document.body.appendChild(form);
+  form.submit();
 }
 
 function providerNotReadyMessage(
   ui: PublicCompanySettings["checkoutUi"],
   provider: string
 ): string {
-  if (provider === "STRIPE") return ui.PROVIDER_NOT_READY_STRIPE;
-  if (provider === "RAZORPAY") return ui.PROVIDER_NOT_READY_RAZORPAY;
   if (provider === "CASHFREE") return ui.PROVIDER_NOT_READY_CASHFREE;
+  if (provider === "RAZORPAY") return ui.PROVIDER_NOT_READY_RAZORPAY;
+  if (provider === "PAYTM") return ui.PROVIDER_NOT_READY_PAYTM;
+  if (provider === "PHONEPE") return ui.PROVIDER_NOT_READY_PHONEPE;
+  if (provider === "PAYU") return ui.PROVIDER_NOT_READY_PAYU;
   return ui.PROVIDER_NOT_READY;
 }
 
 export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { formatPrice } = useCompanyCurrency();
   const { cart, totalPrice, adjustedTotalPrice } = useAppSelector(
     (state: RootState) => state.carts
   );
@@ -80,6 +173,7 @@ export default function CheckoutPage() {
   const [company, setCompany] = useState<PublicCompanySettings | null>(null);
   const [payMethod, setPayMethod] = useState<"cod" | "online" | null>(null);
   const [onlineProvider, setOnlineProvider] = useState<string>("");
+  const [upsell, setUpsell] = useState<Product[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,6 +199,24 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!cart?.items.length) {
+      setUpsell([]);
+      return;
+    }
+    const exclude = Array.from(new Set(cart.items.map((i) => i.id))).join(",");
+    let cancelled = false;
+    (async () => {
+      const res = await getPlain<Product[]>(
+        `/api/products/upsell?exclude=${encodeURIComponent(exclude)}&take=6`
+      );
+      if (!cancelled && res.ok) setUpsell(res.data);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cart]);
+
   const currency = company?.currency ?? {
     code: "INR",
     symbol: "₹",
@@ -114,12 +226,23 @@ export default function CheckoutPage() {
 
   const checkoutCfg = company?.checkout;
 
+  const roundedAdjusted = useMemo(() => Math.round(adjustedTotalPrice), [adjustedTotalPrice]);
+
   const codExtra = useMemo(() => {
     if (!checkoutCfg || payMethod !== "cod") return 0;
     return codFeeForSubtotal(adjustedTotalPrice, checkoutCfg);
   }, [checkoutCfg, payMethod, adjustedTotalPrice]);
 
-  const grandTotal = adjustedTotalPrice + codExtra;
+  const savingsAmount = useMemo(
+    () => Math.max(0, Math.round(totalPrice - adjustedTotalPrice)),
+    [totalPrice, adjustedTotalPrice]
+  );
+  const discountPct = useMemo(
+    () => (totalPrice > 0 ? Math.round((savingsAmount / totalPrice) * 100) : 0),
+    [totalPrice, savingsAmount]
+  );
+
+  const grandTotal = roundedAdjusted + codExtra;
 
   if (!cart || cart.items.length === 0) {
     return (
@@ -185,7 +308,11 @@ export default function CheckoutPage() {
     }));
 
     await withLoading(async () => {
-      const placeRes = await postEnvelope<{ publicToken: string; orderNumber: string }>(
+      const placeRes = await postEnvelope<{
+        publicToken: string;
+        orderNumber: string;
+        checkoutToken?: string;
+      }>(
         "/api/orders/place",
         {
           shipping,
@@ -203,9 +330,14 @@ export default function CheckoutPage() {
 
       const { publicToken } = placeRes.data;
 
-      if (payMethod === "online" && publicToken) {
+      if (payMethod === "online") {
+        const checkoutToken = placeRes.data.checkoutToken;
+        if (!checkoutToken) {
+          toast.error(ui?.PAYMENT_INCOMPLETE ?? "Could not initialize checkout.");
+          return;
+        }
         const sessRes = await postEnvelope<PaymentSessionPayload>("/api/payments/session", {
-          publicToken,
+          checkoutToken,
         });
         if (!sessRes.ok) {
           toast.error(sessRes.message);
@@ -213,94 +345,121 @@ export default function CheckoutPage() {
         }
         const payload = sessRes.data;
 
-        if (payload.provider === "STRIPE") {
-          window.location.href = payload.checkoutUrl;
+        if (payload.provider === "PAYU") {
+          const pu = payload as PayuSessionPayload;
+          submitPayuHostedForm(pu.actionUrl, pu.fields);
           return;
         }
 
         if (payload.provider === "CASHFREE") {
+          const cf = payload as CashfreeSessionPayload;
           try {
-            await loadCashfreeJs();
+            await loadCashfreeScript();
           } catch {
-            toast.error(ui?.SDK_CASHFREE ?? "");
+            toast.error("Could not load Cashfree. Check your connection and try again.");
             return;
           }
-          const cfResult = await openCashfreeModal(payload.paymentSessionId, payload.cashfreeMode);
-          if (cfResult.error && !cfResult.paymentDetails) {
-            toast.warning(ui?.PAYMENT_NOT_COMPLETED ?? "");
-            router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+          const Cashfree = getCashfreeFactory();
+          if (!Cashfree) {
+            toast.error("Cashfree checkout is not available in this browser.");
             return;
           }
-          const verifyRes = await postEnvelope<{ verified: true }>("/api/payments/verify", {
-            publicToken,
-          });
-          if (!verifyRes.ok) {
-            toast.error(verifyRes.message);
-            router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+          const cashfree = Cashfree({ mode: cf.env });
+          try {
+            await cashfree.checkout({
+              paymentSessionId: cf.paymentSessionId,
+              redirectTarget: "_modal",
+            });
+          } catch {
+            /* modal closed or SDK error — still try verify in case payment completed */
+          }
+          const verifyCf = await postEnvelope<{ verified?: boolean; paid?: boolean }>(
+            "/api/payments/verify",
+            { publicToken: cf.publicToken }
+          );
+          if (!verifyCf.ok) {
+            toast.error(verifyCf.message);
             return;
           }
-        } else if (payload.provider === "RAZORPAY") {
+          dispatch(clearCart());
+          toast.success(ui?.ONLINE_SUCCESS_TOAST ?? placeRes.message);
+          router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+          return;
+        }
+
+        if (payload.provider === "RAZORPAY") {
+          const rz = payload as RazorpaySessionPayload;
+
           try {
             await loadRazorpayScript();
           } catch {
-            toast.error(ui?.SDK_RAZORPAY ?? "");
+            toast.error("Could not load the payment widget. Check your connection and try again.");
             return;
           }
-          try {
-            const rz = await openRazorpayCheckout({
-              keyId: payload.keyId,
-              orderId: payload.orderId,
-              amount: payload.amount,
-              currency: payload.currency,
-              name: payload.companyName,
-              description: payload.description,
-              customerName: payload.customerName,
-              customerEmail: payload.customerEmail,
-              customerContact: payload.customerContact,
+
+          let settled = false;
+          await new Promise<void>((resolve) => {
+            const finish = () => {
+              if (settled) return;
+              settled = true;
+              resolve();
+            };
+
+            openRazorpayCheckout({
+              keyId: rz.keyId,
+              amount: rz.amount,
+              currency: rz.currency,
+              orderId: rz.orderId,
+              companyName: rz.companyName,
+              orderNumber: rz.orderNumber,
+              prefill: rz.prefill,
+              onSuccess: async (response) => {
+                try {
+                  const verifyRes = await postEnvelope<{ verified?: boolean; paid?: boolean }>(
+                    "/api/payments/verify",
+                    {
+                      checkoutToken,
+                      razorpayPaymentId: response.razorpay_payment_id,
+                      razorpayOrderId: response.razorpay_order_id,
+                      razorpaySignature: response.razorpay_signature,
+                    }
+                  );
+                  if (!verifyRes.ok) {
+                    toast.error(verifyRes.message);
+                    return;
+                  }
+                  dispatch(clearCart());
+                  toast.success(ui?.ONLINE_SUCCESS_TOAST ?? placeRes.message);
+                  router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
+                } finally {
+                  finish();
+                }
+              },
+              onDismiss: finish,
+              onFailure: (msg) => {
+                toast.error(msg);
+                finish();
+              },
             });
-            const verifyRes = await postEnvelope<{ verified: true }>("/api/payments/verify", {
-              publicToken,
-              razorpayPaymentId: rz.razorpay_payment_id,
-              razorpayOrderId: rz.razorpay_order_id,
-              razorpaySignature: rz.razorpay_signature,
-            });
-            if (!verifyRes.ok) {
-              toast.error(verifyRes.message);
-              router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
-              return;
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : "";
-            if (msg === "dismissed") {
-              toast.warning(ui?.PAYMENT_CANCELLED ?? "");
-              router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
-              return;
-            }
-            toast.error(ui?.PAYMENT_INCOMPLETE ?? "");
-            router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
-            return;
-          }
-        } else {
-          toast.error(ui?.UNSUPPORTED_PROVIDER ?? "");
+          });
           return;
         }
+
+        toast.error(
+          ui?.UNSUPPORTED_PROVIDER ??
+            "This payment provider is not wired for checkout yet. Try Razorpay, Cashfree, PayU, or COD."
+        );
+        return;
       }
 
       dispatch(clearCart());
-      toast.success(
-        payMethod === "cod"
-          ? (ui?.COD_SUCCESS_TOAST ?? placeRes.message)
-          : (ui?.ONLINE_SUCCESS_TOAST ?? placeRes.message)
-      );
+      toast.success(ui?.COD_SUCCESS_TOAST ?? placeRes.message);
       router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
     });
   }
 
-  const channelLabels: string[] = [];
-  if (checkoutCfg?.onlineChannels.upi) channelLabels.push("UPI");
-  if (checkoutCfg?.onlineChannels.card) channelLabels.push("Cards");
-  if (checkoutCfg?.onlineChannels.wallet) channelLabels.push("Wallets");
-  if (checkoutCfg?.onlineChannels.netBanking) channelLabels.push("Net banking");
+  const onlineChannelLine =
+    checkoutCfg && checkoutCfg.onlineAvailable ? channelDetailLine(checkoutCfg.onlineChannels) : "";
 
   return (
     <main className="pb-24 min-h-screen bg-gradient-to-b from-neutral-50 via-white to-neutral-100/80">
@@ -391,7 +550,7 @@ export default function CheckoutPage() {
                     >
                       <input
                         type="radio"
-                        name="payMethod"
+                        name="checkoutPay"
                         value="cod"
                         checked={payMethod === "cod"}
                         onChange={() => setPayMethod("cod")}
@@ -419,67 +578,85 @@ export default function CheckoutPage() {
                     </label>
                   )}
 
-                  {checkoutCfg.onlineAvailable && (
-                    <label
-                      className={cn(
-                        "flex cursor-pointer gap-4 rounded-2xl border-2 p-4 transition-all",
-                        payMethod === "online"
-                          ? "border-black bg-black/[0.03] ring-1 ring-black/10"
-                          : "border-black/10 hover:border-black/25"
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="payMethod"
-                        value="online"
-                        checked={payMethod === "online"}
-                        onChange={() => setPayMethod("online")}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <FaCreditCard className="text-indigo-600 text-lg shrink-0" />
-                          <span className="font-semibold text-black">Pay online</span>
-                        </div>
-                        <p className="text-xs text-black/50 mt-1">
-                          {channelLabels.length > 0
-                            ? channelLabels.join(" · ")
-                            : "UPI, cards, wallets & net banking"}
+                  {checkoutCfg.onlineAvailable && checkoutCfg.onlineProviders.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-black/40 px-1">
+                        Pay online
+                      </p>
+                      {checkoutCfg.onlineProviders.length > 1 ? (
+                        <p className="text-xs text-black/50 px-1 pb-1">
+                          Pick one gateway. Your store accepts{" "}
+                          <span className="font-medium text-black/65">{onlineChannelLine}</span>.
                         </p>
-                        {checkoutCfg.onlineProviders.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {checkoutCfg.onlineProviders.map((p) => (
-                              <span
-                                key={p}
-                                className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-100"
-                              >
-                                {PROVIDER_LABELS[p] ?? p}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {payMethod === "online" && checkoutCfg.onlineProviders.length > 1 && (
-                          <div className="mt-3">
-                            <label htmlFor="checkout-provider" className="text-xs font-medium text-black/55 block mb-1">
-                              Choose provider
-                            </label>
-                            <select
-                              id="checkout-provider"
-                              value={onlineProvider}
-                              onChange={(ev) => setOnlineProvider(ev.target.value)}
-                              className="w-full max-w-xs rounded-xl border border-black/15 bg-white px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                      ) : (
+                        <p className="text-xs text-black/50 px-1 pb-1">
+                          <span className="font-medium text-black/65">{onlineChannelLine}</span>
+                        </p>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        {checkoutCfg.onlineProviders.map((p) => {
+                          const selected = payMethod === "online" && onlineProvider === p;
+                          const ready = company ? isProviderServerReady(company, p) : false;
+                          const multi = checkoutCfg.onlineProviders.length > 1;
+                          return (
+                            <label
+                              key={p}
+                              className={cn(
+                                "flex cursor-pointer gap-4 rounded-2xl border-2 p-4 transition-all items-start",
+                                selected
+                                  ? "border-black bg-black/[0.03] ring-1 ring-black/10"
+                                  : "border-black/10 hover:border-black/25"
+                              )}
                             >
-                              {checkoutCfg.onlineProviders.map((p) => (
-                                <option key={p} value={p}>
-                                  {PROVIDER_LABELS[p] ?? p}
-                                  {company && !isProviderServerReady(company, p) ? " (setup required)" : ""}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
+                              <input
+                                type="radio"
+                                name="checkoutPay"
+                                value={p}
+                                checked={selected}
+                                onChange={() => {
+                                  setPayMethod("online");
+                                  setOnlineProvider(p);
+                                }}
+                                className="mt-1.5 shrink-0"
+                              />
+                              <ProviderLogo provider={p} />
+                              <div className="flex-1 min-w-0 pt-0.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-semibold text-black text-base">
+                                    {PROVIDER_LABELS[p] ?? p}
+                                  </span>
+                                  {!ready && (
+                                    <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-100">
+                                      Setup required
+                                    </span>
+                                  )}
+                                </div>
+                                {!multi && (
+                                  <p className="text-xs text-black/50 mt-1 leading-relaxed">
+                                    Use {onlineChannelLine} and other methods enabled for your store at checkout.
+                                  </p>
+                                )}
+                                <p
+                                  className={cn(
+                                    "text-[11px] text-black/40 leading-relaxed",
+                                    multi ? "mt-1" : "mt-1.5"
+                                  )}
+                                >
+                                  Secure checkout — keys are checked on the server when you place the order.
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
                       </div>
-                    </label>
+                    </div>
+                  )}
+
+                  {checkoutCfg.onlineAvailable && checkoutCfg.onlineProviders.length === 0 && (
+                    <p className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                      Online payments are enabled but no gateway is selected. Add a provider in{" "}
+                      <strong>Admin → Payment settings</strong>.
+                    </p>
                   )}
                 </div>
               )}
@@ -507,37 +684,51 @@ export default function CheckoutPage() {
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-black truncate">{item.name}</p>
                       <p className="text-xs text-black/45">
-                        {item.attributes.filter(Boolean).join(" · ")} · Qty {item.quantity}
+                        {[item.attributes.filter(Boolean).join(" · "), `Qty ${item.quantity}`]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </p>
                     </div>
                   </li>
                 ))}
               </ul>
               <div className="h-px bg-black/8" />
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-black/55">
-                  <span>Subtotal</span>
-                  <span className="font-medium text-black tabular-nums">
-                    {formatMoney(totalPrice, currency)}
-                  </span>
+              <div className="flex flex-col space-y-3 md:space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-base md:text-xl text-black/60">Subtotal</span>
+                  <span className="text-base md:text-xl font-bold tabular-nums">{formatPrice(totalPrice)}</span>
                 </div>
-                {totalPrice !== adjustedTotalPrice && (
-                  <div className="flex justify-between text-emerald-700">
-                    <span>After discount</span>
-                    <span className="font-medium tabular-nums">
-                      {formatMoney(adjustedTotalPrice, currency)}
+                {savingsAmount > 0 && (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-base md:text-xl text-black/60">
+                        Discount (-{discountPct}%)
+                      </span>
+                      <span className="text-base md:text-xl font-bold text-red-600 tabular-nums">
+                        -{formatPrice(savingsAmount)}
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-emerald-700 bg-emerald-50/80 border border-emerald-100 rounded-xl px-3 py-2 text-center">
+                      You save {formatPrice(savingsAmount)} on this order
+                    </p>
+                  </>
+                )}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-base md:text-xl text-black/60">Delivery fee</span>
+                  <span className="text-base md:text-xl font-bold text-emerald-700">Free</span>
+                </div>
+                {payMethod === "cod" && codExtra > 0 && (
+                  <div className="flex items-center justify-between gap-2 text-amber-900">
+                    <span className="text-base md:text-xl text-amber-800/90">COD fee</span>
+                    <span className="text-base md:text-xl font-bold tabular-nums">
+                      {formatMoney(codExtra, currency)}
                     </span>
                   </div>
                 )}
-                {payMethod === "cod" && codExtra > 0 && (
-                  <div className="flex justify-between text-amber-800">
-                    <span>COD fee</span>
-                    <span className="font-medium tabular-nums">{formatMoney(codExtra, currency)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-baseline pt-2">
-                  <span className="text-black/60 font-medium">Total</span>
-                  <span className="text-2xl font-bold text-black tabular-nums">
+                <hr className="border-t border-black/10" />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-base md:text-xl text-black font-semibold">Total</span>
+                  <span className="text-xl md:text-2xl font-bold tabular-nums">
                     {formatMoney(grandTotal, currency)}
                   </span>
                 </div>
@@ -550,18 +741,27 @@ export default function CheckoutPage() {
                 {submitting ? "Placing order…" : "Place order"}
               </Button>
               <p className="text-[11px] text-center text-black/40 leading-relaxed">
-                {payMethod === "online" && company && isProviderServerReady(company, onlineProvider)
-                  ? onlineProvider === "STRIPE"
-                    ? "Secure checkout · You will complete payment on Stripe."
-                    : onlineProvider === "RAZORPAY"
-                      ? "Secure checkout · Razorpay (UPI, cards, netbanking)."
-                      : onlineProvider === "CASHFREE"
-                        ? "Secure checkout · Cashfree (UPI, cards, netbanking)."
-                        : "Secure checkout · Pay online."
+                {payMethod === "online" && company && onlineProvider && isProviderServerReady(company, onlineProvider)
+                  ? `Secure checkout · ${PROVIDER_LABELS[onlineProvider] ?? onlineProvider} is configured.`
                   : payMethod === "online"
-                    ? "Secure checkout · Configure the selected provider on the server to enable live payments."
+                    ? "Secure checkout · Finish gateway setup in Admin → Payment settings to take live payments."
                     : "Secure checkout · Pay on delivery."}
               </p>
+
+              {upsell.length > 0 && (
+                <div className="pt-6 mt-2 border-t border-black/10 space-y-4">
+                  <h4 className="text-sm font-bold text-black uppercase tracking-wide">
+                    You may also like
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-0.5 -mx-0.5">
+                    {upsell.map((p) => (
+                      <div key={p.id} className="min-w-0">
+                        <ProductCard data={p} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
         </form>

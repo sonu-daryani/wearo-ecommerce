@@ -7,6 +7,12 @@ import Footer from "@/components/layout/Footer";
 import HolyLoader from "holy-loader";
 import Providers from "./providers";
 import {
+  getPublicCompanySettings,
+  themeContentMap,
+} from "@/lib/company-settings";
+import { unstable_noStore as noStore } from "next/cache";
+import StorefrontEditorBridge from "@/components/editor/StorefrontEditorBridge";
+import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
   SITE_NAME,
@@ -14,6 +20,8 @@ import {
   defaultTwitter,
   getMetadataBase,
 } from "@/lib/site-config";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
@@ -73,21 +81,47 @@ export const viewport: Viewport = {
   themeColor: "#2563eb",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  noStore();
+  let themeVars: Record<string, string> | null = null;
+  let contentFromTheme: Record<string, string> = {};
+  try {
+    const company = await getPublicCompanySettings();
+    themeVars = company.theme;
+    contentFromTheme = themeContentMap(company.theme);
+  } catch {
+    themeVars = null;
+    contentFromTheme = {};
+  }
+
   return (
     <html lang="en-IN">
       <body className={satoshi.className}>
+        {/* Theme variables injected from Admin → Theme editor */}
+        {themeVars && (
+          <style
+            id="storefront-theme"
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html: `:root{${Object.entries(themeVars)
+                .filter(([k, v]) => k.startsWith("--") && typeof v === "string" && v.trim().length > 0)
+                .map(([k, v]) => `${k}:${String(v).trim()};`)
+                .join("")}}`,
+            }}
+          />
+        )}
         <HolyLoader color="#868686" />
-        <TopBanner />
+        <StorefrontEditorBridge initialTheme={themeVars} />
+        <TopBanner contentText={contentFromTheme} />
         <Providers>
-          <TopNavbar />
+          <TopNavbar contentText={contentFromTheme} />
           {children}
         </Providers>
-        <Footer />
+        <Footer contentText={contentFromTheme} />
       </body>
     </html>
   );

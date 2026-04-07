@@ -49,14 +49,16 @@ export const API_MESSAGES = {
     CHOOSE_PROVIDER: "Choose a payment provider.",
     PROVIDER_NOT_READY:
       "This provider is not fully configured in Admin → Payment settings.",
-    PROVIDER_NOT_READY_STRIPE:
-      "Stripe: add the publishable key and secret key in Admin → Payment settings.",
-    PROVIDER_NOT_READY_RAZORPAY:
-      "Razorpay: add the Key ID and Key Secret in Admin → Payment settings.",
     PROVIDER_NOT_READY_CASHFREE:
-      "Cashfree: add the App ID and Secret key in Admin → Payment settings.",
-    SDK_CASHFREE: "Could not load payment SDK. Check your network or ad blocker.",
-    SDK_RAZORPAY: "Could not load Razorpay. Check your network or ad blocker.",
+      "Cashfree: add App ID and Secret key in Admin → Payment settings.",
+    PROVIDER_NOT_READY_RAZORPAY:
+      "Razorpay: add Key ID and Key Secret in Admin → Payment settings.",
+    PROVIDER_NOT_READY_PAYTM:
+      "Paytm: add Merchant ID and Merchant Key in Admin → Payment settings.",
+    PROVIDER_NOT_READY_PHONEPE:
+      "PhonePe: add Merchant ID and Salt Key in Admin → Payment settings.",
+    PROVIDER_NOT_READY_PAYU:
+      "PayU: add Merchant Key and Salt in Admin → Payment settings.",
     PAYMENT_NOT_COMPLETED: "Payment was not completed. You can retry from your order page.",
     PAYMENT_CANCELLED: "Payment cancelled.",
     PAYMENT_INCOMPLETE: "Payment did not complete.",

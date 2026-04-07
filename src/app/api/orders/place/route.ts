@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { API_MESSAGES } from "@/lib/api/api-messages";
 import { apiError, apiSuccess } from "@/lib/api/http-responses";
 import { getPublicCompanySettings } from "@/lib/company-settings";
+import { createOnlineCheckoutIntentToken } from "@/lib/checkout-intent";
 import {
   createOrderRecord,
   validateAndSummarizeLines,
@@ -93,20 +94,54 @@ export async function POST(req: Request) {
   const orderUserId = session?.user?.id ?? null;
 
   try {
+    if (paymentMethod === "cod") {
+      const { publicToken, orderNumber } = await createOrderRecord({
+        shipping,
+        paymentMethod,
+        paymentProvider: null,
+        currencyCode: currency.code,
+        items,
+        subtotal,
+        discountAmount,
+        codFee: serverCodFee,
+        grandTotal: serverGrand,
+        userId: orderUserId,
+      });
+      return apiSuccess({ publicToken, orderNumber }, API_MESSAGES.ORDERS.PLACED, 200);
+    }
+
+    if (!paymentProvider) {
+      return apiError(API_MESSAGES.ORDERS.NO_PROVIDER_CONFIGURED, 400);
+    }
+
     const { publicToken, orderNumber } = await createOrderRecord({
       shipping,
-      paymentMethod,
+      paymentMethod: "online",
       paymentProvider,
       currencyCode: currency.code,
       items,
       subtotal,
       discountAmount,
-      codFee: serverCodFee,
+      codFee: 0,
       grandTotal: serverGrand,
       userId: orderUserId,
     });
 
-    return apiSuccess({ publicToken, orderNumber }, API_MESSAGES.ORDERS.PLACED, 200);
+    const checkoutToken = createOnlineCheckoutIntentToken({
+      publicToken,
+      orderNumber,
+      shipping,
+      paymentProvider,
+      currencyCode: currency.code,
+      items,
+      subtotal,
+      discountAmount,
+      codFee: 0,
+      grandTotal: serverGrand,
+      userId: orderUserId,
+    });
+
+    return apiSuccess({ checkoutToken, publicToken, orderNumber }, API_MESSAGES.PAYMENTS.SESSION_READY, 200);
   } catch (e) {
     console.error(e);
     return apiError(API_MESSAGES.ORDERS.PLACE_FAILED, 500);

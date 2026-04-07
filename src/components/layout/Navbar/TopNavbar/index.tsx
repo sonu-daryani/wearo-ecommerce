@@ -1,4 +1,6 @@
+import { EditableHtml } from "@/components/editor/EditableHtml";
 import { cn } from "@/lib/utils";
+import { stripHtmlTags } from "@/lib/strip-html-tags";
 import { integralCF } from "@/styles/fonts";
 import Link from "next/link";
 import React from "react";
@@ -70,13 +72,26 @@ const data: NavMenu = [
   },
 ];
 
-const TopNavbar = () => {
+type TopNavbarProps = {
+  /** From Admin theme `content.*` keys (SSR). */
+  contentText?: Record<string, string>;
+};
+
+const BRAND_FALLBACK = "Wearo.in";
+
+const TopNavbar = ({ contentText = {} }: TopNavbarProps) => {
+  const brandPlain =
+    stripHtmlTags(contentText.navbarBrand ?? "") || BRAND_FALLBACK;
   return (
-    <nav className="sticky top-0 bg-white z-20">
+    <nav
+      className="sticky top-0 z-20 [color:hsl(var(--navbar-fg))]"
+      style={{ backgroundColor: "hsl(var(--navbar-bg))" }}
+      data-editor-block="navbar"
+    >
       <div className="flex relative max-w-frame mx-auto items-center justify-between md:justify-start py-5 md:py-6 px-4 xl:px-0">
         <div className="flex items-center">
           <div className="block md:hidden mr-4">
-            <ResTopNavbar data={data} />
+            <ResTopNavbar data={data} brandLabel={brandPlain} />
           </div>
           <Link
             href="/"
@@ -85,7 +100,11 @@ const TopNavbar = () => {
               "text-2xl lg:text-[32px] mb-2 mr-3 lg:mr-10",
             ])}
           >
-            Wearo.in
+            <EditableHtml
+              editorKey="navbarBrand"
+              storedHtml={contentText.navbarBrand}
+              fallbackPlain={BRAND_FALLBACK}
+            />
           </Link>
         </div>
         <NavigationMenu className="hidden md:flex mr-2 lg:mr-7">
@@ -93,10 +112,28 @@ const TopNavbar = () => {
             {data.map((item) => (
               <React.Fragment key={item.id}>
                 {item.type === "MenuItem" && (
-                  <MenuItem label={item.label} url={item.url} />
+                  <MenuItem
+                    label={item.label}
+                    url={item.url}
+                    contentText={contentText}
+                    labelKey={
+                      item.id === 2
+                        ? "navbarMenuOnSale"
+                        : item.id === 3
+                          ? "navbarMenuNewArrivals"
+                          : item.id === 4
+                            ? "navbarMenuBrands"
+                            : undefined
+                    }
+                  />
                 )}
                 {item.type === "MenuList" && (
-                  <MenuList data={item.children} label={item.label} />
+                  <MenuList
+                    data={item.children}
+                    label={item.label}
+                    contentText={contentText}
+                    labelKey={item.id === 1 ? "navbarMenuShop" : undefined}
+                  />
                 )}
               </React.Fragment>
             ))}

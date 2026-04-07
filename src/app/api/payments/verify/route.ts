@@ -5,11 +5,11 @@ import { verifyOnlinePayment } from "@/lib/payments/verify-payment";
 export const dynamic = "force-dynamic";
 
 type Body = {
+  checkoutToken?: string;
   publicToken?: string;
-  stripeSessionId?: string | null;
-  razorpayPaymentId?: string | null;
-  razorpayOrderId?: string | null;
-  razorpaySignature?: string | null;
+  razorpayPaymentId?: string;
+  razorpayOrderId?: string;
+  razorpaySignature?: string;
 };
 
 export async function POST(req: Request) {
@@ -20,14 +20,15 @@ export async function POST(req: Request) {
     return apiError(API_MESSAGES.COMMON.INVALID_JSON, 400);
   }
 
+  const checkoutToken = body.checkoutToken?.trim();
   const publicToken = body.publicToken?.trim();
-  if (!publicToken) {
-    return apiError(API_MESSAGES.PAYMENTS.MISSING_PUBLIC_TOKEN, 400);
+  if (!checkoutToken && !publicToken) {
+    return apiError("Missing checkout token or public token.", 400);
   }
 
   const result = await verifyOnlinePayment({
+    checkoutToken,
     publicToken,
-    stripeSessionId: body.stripeSessionId,
     razorpayPaymentId: body.razorpayPaymentId,
     razorpayOrderId: body.razorpayOrderId,
     razorpaySignature: body.razorpaySignature,
@@ -37,5 +38,5 @@ export async function POST(req: Request) {
     return apiError(result.error ?? API_MESSAGES.PAYMENTS.VERIFY_FAILED_GENERIC, result.status);
   }
 
-  return apiSuccess({ verified: true }, API_MESSAGES.PAYMENTS.VERIFY_SUCCESS, 200);
+  return apiSuccess({ verified: true, paid: result.paid }, API_MESSAGES.PAYMENTS.VERIFY_SUCCESS, 200);
 }

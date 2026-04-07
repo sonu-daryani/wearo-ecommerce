@@ -156,8 +156,17 @@ model CompanySettings {
   stripeSecretKey      String?
   razorpayKeySecret    String?
   cashfreeClientSecret String?
+  paytmMerchantId      String?
+  paytmMerchantKey     String?
+  phonepeMerchantId    String?
+  phonepeSaltKey       String?
+  payuMerchantKey      String?
+  payuSalt             String?
 
   paymentInstructions String?
+
+  /// Storefront theme tokens applied as CSS variables (Shopify-like theme editor).
+  theme Json?
 }
 
 enum OrderStatus {

@@ -12,6 +12,7 @@ function PaymentReturnInner() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const sessionId = searchParams.get("session_id");
+  const checkoutToken = searchParams.get("checkoutToken");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -34,7 +35,9 @@ function PaymentReturnInner() {
         return;
       }
 
-      const body: Record<string, unknown> = { publicToken: token };
+      const body: Record<string, unknown> = checkoutToken
+        ? { checkoutToken }
+        : { publicToken: token };
       if (sessionId) {
         body.stripeSessionId = sessionId;
       }
@@ -51,7 +54,7 @@ function PaymentReturnInner() {
     return () => {
       cancelled = true;
     };
-  }, [token, sessionId, router]);
+  }, [token, sessionId, checkoutToken, router]);
 
   return (
     <main className="min-h-[50vh] max-w-frame mx-auto px-4 py-16 text-center">

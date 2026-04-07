@@ -126,6 +126,64 @@ export async function createOrderRecord(params: {
   return { publicToken, orderNumber };
 }
 
+export async function createOnlineOrderRecord(params: {
+  publicToken: string;
+  orderNumber: string;
+  shipping: ShippingInput;
+  paymentProvider: string;
+  currencyCode: string;
+  items: OrderLineInput[];
+  subtotal: number;
+  discountAmount: number;
+  grandTotal: number;
+  userId?: string | null;
+  paymentStatus: "PAID" | "FAILED";
+}): Promise<{ publicToken: string; orderNumber: string }> {
+  const itemsJson: Prisma.InputJsonValue = params.items.map((i) => ({
+    id: i.id,
+    name: i.name,
+    srcUrl: i.srcUrl,
+    price: i.price,
+    quantity: i.quantity,
+    attributes: i.attributes,
+    discount: i.discount,
+  }));
+
+  const shippingJson: Prisma.InputJsonValue = {
+    ...params.shipping,
+    email: params.shipping.email.trim().toLowerCase(),
+  };
+
+  const isPaid = params.paymentStatus === "PAID";
+
+  const existing = await prisma.order.findUnique({
+    where: { publicToken: params.publicToken },
+    select: { publicToken: true, orderNumber: true },
+  });
+  if (existing) return existing;
+
+  await prisma.order.create({
+    data: {
+      orderNumber: params.orderNumber,
+      publicToken: params.publicToken,
+      status: isPaid ? "CONFIRMED" : "CANCELLED",
+      paymentStatus: params.paymentStatus,
+      paymentMethod: "online",
+      paymentProvider: params.paymentProvider,
+      currencyCode: params.currencyCode,
+      subtotal: params.subtotal,
+      discountAmount: params.discountAmount,
+      codFee: 0,
+      grandTotal: params.grandTotal,
+      items: itemsJson,
+      shipping: shippingJson,
+      userId: params.userId ?? null,
+    },
+  });
+
+  return { publicToken: params.publicToken, orderNumber: params.orderNumber };
+}
+
 export async function markOnlinePaymentPaid(publicToken: string): Promise<{ ok: boolean; error?: string }> {
   const order = await prisma.order.findUnique({ where: { publicToken } });
   if (!order) return { ok: false, error: "Order not found." };

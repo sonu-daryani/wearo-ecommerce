@@ -14,12 +14,15 @@ import {
 } from "@/components/ui/carousel";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa6";
 import { useIsClient, useMediaQuery } from "usehooks-ts";
+import { EditableHtml } from "@/components/editor/EditableHtml";
 import ReviewCard from "@/components/common/ReviewCard";
 import { Review } from "@/types/review.types";
 
-type ReviewsProps = { data: Review[] };
+const REVIEWS_HEADING_FALLBACK = "OUR HAPPY CUSTOMERS";
 
-const Reviews = ({ data }: ReviewsProps) => {
+type ReviewsProps = { data: Review[]; contentText?: Record<string, string> };
+
+const Reviews = ({ data, contentText = {} }: ReviewsProps) => {
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
@@ -42,7 +45,7 @@ const Reviews = ({ data }: ReviewsProps) => {
   if (!isClient) return null;
 
   return (
-    <section className="overflow-hidden">
+    <section className="overflow-hidden" data-editor-block="reviews">
       <motion.div
         initial={{ x: "100px", opacity: 0 }}
         whileInView={{ x: "0", opacity: 1 }}
@@ -68,7 +71,11 @@ const Reviews = ({ data }: ReviewsProps) => {
                 "text-[32px] leading-[36px] md:text-5xl capitalize mr-auto",
               ])}
             >
-              OUR HAPPY CUSTOMERS
+              <EditableHtml
+                editorKey="reviewsHeading"
+                storedHtml={contentText.reviewsHeading}
+                fallbackPlain={REVIEWS_HEADING_FALLBACK}
+              />
             </motion.h2>
             <div className="flex items-center space-x-1 ml-2">
               <CarouselPrevious variant="ghost" className="text-2xl">

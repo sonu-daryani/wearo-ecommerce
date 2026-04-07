@@ -1,3 +1,4 @@
+import { EditableHtml } from "@/components/editor/EditableHtml";
 import { cn } from "@/lib/utils";
 import { integralCF } from "@/styles/fonts";
 import React from "react";
@@ -55,16 +56,32 @@ const paymentBadgesData: PaymentBadge[] = [
   },
 ];
 
-const Footer = () => {
+const DEFAULT_FOOTER_TAGLINE =
+  "We have clothes that suits your style and which you’re proud to wear. From women to men.";
+
+type FooterProps = {
+  contentText?: Record<string, string>;
+};
+
+const FOOTER_BRAND_FALLBACK = "Wearo.in";
+
+const Footer = ({ contentText = {} }: FooterProps) => {
   return (
-    <footer className="mt-10">
+    <footer className="mt-10" data-editor-block="footer">
       <div className="relative">
-        <div className="absolute bottom-0 w-full h-1/2 bg-[#F0F0F0]"></div>
+        <div
+          className="absolute bottom-0 w-full h-1/2"
+          style={{ backgroundColor: "hsl(var(--footer-bar-bg))" }}
+          aria-hidden
+        />
         <div className="px-4">
-          <NewsLetterSection />
+          <NewsLetterSection contentText={contentText} />
         </div>
       </div>
-      <div className="pt-8 md:pt-[50px] bg-[#F0F0F0] px-4 pb-4">
+      <div
+        className="pt-8 md:pt-[50px] px-4 pb-4"
+        style={{ backgroundColor: "hsl(var(--footer-bar-bg))" }}
+      >
         <div className="max-w-frame mx-auto">
           <nav className="lg:grid lg:grid-cols-12 mb-8">
             <div className="flex flex-col lg:col-span-3 lg:max-w-[248px]">
@@ -74,12 +91,19 @@ const Footer = () => {
                   "text-[28px] lg:text-[32px] mb-6",
                 ])}
               >
-                Wearo.in
+                <EditableHtml
+                  editorKey="footerBrand"
+                  storedHtml={contentText.footerBrand}
+                  fallbackPlain={FOOTER_BRAND_FALLBACK}
+                />
               </h1>
-              <p className="text-black/60 text-sm mb-9">
-                We have clothes that suits your style and which you’re proud to
-                wear. From women to men.
-              </p>
+              <EditableHtml
+                as="p"
+                className="text-black/60 text-sm mb-9"
+                editorKey="footerTagline"
+                storedHtml={contentText.footerTagline}
+                fallbackPlain={DEFAULT_FOOTER_TAGLINE}
+              />
               <div className="flex items-center">
                 {socialsData.map((social) => (
                   <Link
