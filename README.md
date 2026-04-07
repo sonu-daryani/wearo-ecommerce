@@ -1,6 +1,7 @@
 # Wearo storefront (`shopco-ecommerce`)
 
 Responsive e-commerce storefront built with **Next.js 14** (App Router), **TypeScript**, **Tailwind CSS**, **Redux Toolkit**, **Framer Motion**, and **shadcn/ui**-style components. Pairs with **[wearo-ecommerce-admin](https://github.com/sonu-daryani/wearo-ecommerce-admin)** (same MongoDB + Prisma schema).
+<img width="1385" height="992" alt="Screenshot 2026-04-07 at 5 46 16 PM" src="https://github.com/user-attachments/assets/ba8f615f-8dea-4e0b-b2b5-21cc89dda248" />
 
 ---
 
