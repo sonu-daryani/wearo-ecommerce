@@ -39,6 +39,12 @@ export const API_MESSAGES = {
     REGISTER_INVALID: "Enter a valid email and a password of at least 8 characters.",
     REGISTER_EXISTS: "An account with this email already exists.",
     REGISTER_SUCCESS: "Account created. You can sign in.",
+    OTP_NOT_CONFIGURED: "Email verification is not available. Try again later.",
+    OTP_SENT_SIGNUP: "We sent a 6-digit code to your email.",
+    OTP_SENT_LOGIN: "We sent a 6-digit code to your email.",
+    OTP_REQUIRED: "Enter the 6-digit code we emailed you.",
+    OTP_INVALID: "Invalid or expired code. Request a new code and try again.",
+    LOGIN_INVALID: "Invalid email or password.",
   },
 
   /** Included on GET /api/company-settings for checkout copy (no duplicate strings in components). */

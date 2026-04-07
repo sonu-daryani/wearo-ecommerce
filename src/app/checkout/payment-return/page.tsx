@@ -58,7 +58,16 @@ function PaymentReturnInner() {
 
   return (
     <main className="min-h-[50vh] max-w-frame mx-auto px-4 py-16 text-center">
-      <p className="text-black/70 mb-6">{message || "…"}</p>
+      <div
+        className="h-10 w-10 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-6"
+        aria-hidden
+      />
+      <p className="text-black/70 mb-2 font-medium">
+        {message || "Confirming your payment…"}
+      </p>
+      <p className="text-sm text-black/50 mb-6 max-w-md mx-auto">
+        Please wait — do not go back to checkout or place the order again.
+      </p>
       {!token ? (
         <Button asChild className="rounded-full">
           <Link href="/checkout">Back to checkout</Link>

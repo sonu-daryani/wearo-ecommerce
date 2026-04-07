@@ -13,6 +13,7 @@ const products = [
     sectionNewArrival: true,
     sectionTopSelling: false,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 2,
@@ -27,6 +28,7 @@ const products = [
     sectionNewArrival: true,
     sectionTopSelling: false,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 3,
@@ -41,6 +43,7 @@ const products = [
     sectionNewArrival: true,
     sectionTopSelling: false,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 4,
@@ -55,6 +58,7 @@ const products = [
     sectionNewArrival: true,
     sectionTopSelling: false,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 5,
@@ -69,6 +73,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: true,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 6,
@@ -83,6 +88,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: true,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 7,
@@ -97,6 +103,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: true,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 8,
@@ -111,6 +118,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: true,
     sectionRelated: false,
+    isDefault: true,
   },
   {
     id: 12,
@@ -125,6 +133,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: false,
     sectionRelated: true,
+    isDefault: true,
   },
   {
     id: 13,
@@ -139,6 +148,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: false,
     sectionRelated: true,
+    isDefault: true,
   },
   {
     id: 14,
@@ -153,6 +163,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: false,
     sectionRelated: true,
+    isDefault: true,
   },
   {
     id: 15,
@@ -167,6 +178,7 @@ const products = [
     sectionNewArrival: false,
     sectionTopSelling: false,
     sectionRelated: true,
+    isDefault: true,
   },
 ];
 

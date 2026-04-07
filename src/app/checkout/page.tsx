@@ -12,7 +12,7 @@ import { RootState } from "@/lib/store";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { FaArrowLeft } from "react-icons/fa6";
 import { FaMoneyBillWave } from "react-icons/fa6";
@@ -170,6 +170,8 @@ export default function CheckoutPage() {
     (state: RootState) => state.carts
   );
   const { loading: submitting, withLoading } = useApiLoading();
+  /** Blocks double submit before React re-renders `disabled` on the button. */
+  const placementInFlightRef = useRef(false);
   const [company, setCompany] = useState<PublicCompanySettings | null>(null);
   const [payMethod, setPayMethod] = useState<"cod" | "online" | null>(null);
   const [onlineProvider, setOnlineProvider] = useState<string>("");
@@ -260,54 +262,59 @@ export default function CheckoutPage() {
 
   async function placeOrder(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = e.currentTarget;
-    const ui = company?.checkoutUi;
-    if (noPayment || !payMethod || !cart) {
-      toast.error(ui?.NO_PAYMENT_METHOD ?? "");
+    if (placementInFlightRef.current || submitting) {
       return;
     }
-    if (
-      payMethod === "online" &&
-      checkoutCfg &&
-      checkoutCfg.onlineProviders.length > 0 &&
-      !onlineProvider
-    ) {
-      toast.error(ui?.CHOOSE_PROVIDER ?? "");
-      return;
-    }
-    if (payMethod === "online" && onlineProvider) {
-      const fresh = await getPlain<PublicCompanySettings>("/api/company-settings");
-      const live = fresh.ok ? fresh.data : company;
-      if (live && !isProviderServerReady(live, onlineProvider)) {
-        const msgs = live.checkoutUi;
-        toast.error(providerNotReadyMessage(msgs, onlineProvider));
-        if (fresh.ok) setCompany(live);
+    placementInFlightRef.current = true;
+    try {
+      const form = e.currentTarget;
+      const ui = company?.checkoutUi;
+      if (noPayment || !payMethod || !cart) {
+        toast.error(ui?.NO_PAYMENT_METHOD ?? "");
         return;
       }
-      if (fresh.ok) setCompany(fresh.data);
-    }
+      if (
+        payMethod === "online" &&
+        checkoutCfg &&
+        checkoutCfg.onlineProviders.length > 0 &&
+        !onlineProvider
+      ) {
+        toast.error(ui?.CHOOSE_PROVIDER ?? "");
+        return;
+      }
+      if (payMethod === "online" && onlineProvider) {
+        const fresh = await getPlain<PublicCompanySettings>("/api/company-settings");
+        const live = fresh.ok ? fresh.data : company;
+        if (live && !isProviderServerReady(live, onlineProvider)) {
+          const msgs = live.checkoutUi;
+          toast.error(providerNotReadyMessage(msgs, onlineProvider));
+          if (fresh.ok) setCompany(live);
+          return;
+        }
+        if (fresh.ok) setCompany(fresh.data);
+      }
 
-    const fd = new FormData(form);
-    const shipping = {
-      fullName: String(fd.get("fullName") ?? "").trim(),
-      email: String(fd.get("email") ?? "").trim(),
-      phone: String(fd.get("phone") ?? "").trim(),
-      address: String(fd.get("address") ?? "").trim(),
-      city: String(fd.get("city") ?? "").trim(),
-      pin: String(fd.get("pin") ?? "").trim(),
-    };
+      const fd = new FormData(form);
+      const shipping = {
+        fullName: String(fd.get("fullName") ?? "").trim(),
+        email: String(fd.get("email") ?? "").trim(),
+        phone: String(fd.get("phone") ?? "").trim(),
+        address: String(fd.get("address") ?? "").trim(),
+        city: String(fd.get("city") ?? "").trim(),
+        pin: String(fd.get("pin") ?? "").trim(),
+      };
 
-    const items = cart.items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      srcUrl: item.srcUrl,
-      price: item.price,
-      quantity: item.quantity,
-      attributes: item.attributes,
-      discount: item.discount,
-    }));
+      const items = cart.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        srcUrl: item.srcUrl,
+        price: item.price,
+        quantity: item.quantity,
+        attributes: item.attributes,
+        discount: item.discount,
+      }));
 
-    await withLoading(async () => {
+      await withLoading(async () => {
       const placeRes = await postEnvelope<{
         publicToken: string;
         orderNumber: string;
@@ -397,6 +404,13 @@ export default function CheckoutPage() {
             return;
           }
 
+          /**
+           * Razorpay calls `modal.ondismiss` when the modal closes after success too, not only
+           * when the user cancels. If we resolve the Promise there, loading ends while verify is
+           * still running and the user can place another order. Only finish from onDismiss when
+           * the user closed without a successful handler run.
+           */
+          let paymentSuccessStarted = false;
           let settled = false;
           await new Promise<void>((resolve) => {
             const finish = () => {
@@ -414,6 +428,7 @@ export default function CheckoutPage() {
               orderNumber: rz.orderNumber,
               prefill: rz.prefill,
               onSuccess: async (response) => {
+                paymentSuccessStarted = true;
                 try {
                   const verifyRes = await postEnvelope<{ verified?: boolean; paid?: boolean }>(
                     "/api/payments/verify",
@@ -435,7 +450,10 @@ export default function CheckoutPage() {
                   finish();
                 }
               },
-              onDismiss: finish,
+              onDismiss: () => {
+                if (paymentSuccessStarted) return;
+                finish();
+              },
               onFailure: (msg) => {
                 toast.error(msg);
                 finish();
@@ -455,14 +473,40 @@ export default function CheckoutPage() {
       dispatch(clearCart());
       toast.success(ui?.COD_SUCCESS_TOAST ?? placeRes.message);
       router.push(`/order-confirmation?token=${encodeURIComponent(publicToken)}`);
-    });
+      });
+    } finally {
+      placementInFlightRef.current = false;
+    }
   }
 
   const onlineChannelLine =
     checkoutCfg && checkoutCfg.onlineAvailable ? channelDetailLine(checkoutCfg.onlineChannels) : "";
 
   return (
-    <main className="pb-24 min-h-screen bg-gradient-to-b from-neutral-50 via-white to-neutral-100/80">
+    <main className="pb-24 min-h-screen bg-gradient-to-b from-neutral-50 via-white to-neutral-100/80 relative">
+      {submitting && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 backdrop-blur-[2px] px-4"
+          role="alertdialog"
+          aria-busy="true"
+          aria-live="polite"
+          aria-label="Processing checkout"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center space-y-4 border border-black/5">
+            <div
+              className="h-11 w-11 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"
+              aria-hidden
+            />
+            <div>
+              <p className="font-semibold text-black text-base">Processing your order</p>
+              <p className="text-sm text-black/55 mt-2 leading-relaxed">
+                If a payment window opens, complete it there. This screen stays until we finish
+                confirming — please do not click Place order again or go back.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-frame mx-auto px-4 xl:px-0 pt-6 md:pt-10">
         <BreadcrumbCart />
         <Link
@@ -738,7 +782,7 @@ export default function CheckoutPage() {
                 disabled={submitting || !company || noPayment || !payMethod}
                 className="w-full rounded-full bg-black h-12 md:h-14 text-base font-semibold tracking-wide hover:bg-black/90 disabled:opacity-40"
               >
-                {submitting ? "Placing order…" : "Place order"}
+                {submitting ? "Processing…" : "Place order"}
               </Button>
               <p className="text-[11px] text-center text-black/40 leading-relaxed">
                 {payMethod === "online" && company && onlineProvider && isProviderServerReady(company, onlineProvider)

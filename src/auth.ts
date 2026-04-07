@@ -4,6 +4,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
+import { isEmailOtpEnabled } from "@/lib/auth/email-otp-config";
+import { loginOtpIdentifier, verifyOtpAndConsume } from "@/lib/auth/otp-verification-token";
 import prisma from "@/lib/prisma";
 
 const googleConfigured =
@@ -25,6 +27,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             clientId: process.env.AUTH_GOOGLE_ID,
             clientSecret: process.env.AUTH_GOOGLE_SECRET,
             allowDangerousEmailAccountLinking: true,
+            // Always show Google’s account chooser so the browser cannot silently reuse another profile.
+            authorization: { params: { prompt: "select_account" } },
           }),
         ]
       : []),
@@ -34,6 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        otp: { label: "One-time code", type: "text" },
       },
       async authorize(credentials) {
         const email = credentials?.email
@@ -49,6 +54,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
+
+        if (isEmailOtpEnabled()) {
+          const otp = credentials?.otp ? String(credentials.otp).trim() : "";
+          if (!otp) return null;
+          const otpOk = await verifyOtpAndConsume(loginOtpIdentifier(email), otp);
+          if (!otpOk) return null;
+        }
 
         return {
           id: user.id,
@@ -70,20 +82,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user?.id) {
         token.sub = user.id;
-        token.email = user.email ?? undefined;
-        token.name = user.name ?? undefined;
-        token.picture = user.image ?? undefined;
+      }
+      const sub = token.sub as string | undefined;
+      if (sub) {
         const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { role: true },
+          where: { id: sub },
+          select: { email: true, name: true, image: true, role: true },
         });
-        token.role = dbUser?.role ?? "CUSTOMER";
-      } else if (token.sub && !token.role) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub as string },
-          select: { role: true },
-        });
-        token.role = dbUser?.role ?? "CUSTOMER";
+        if (dbUser) {
+          token.email = dbUser.email ?? undefined;
+          token.name = dbUser.name ?? undefined;
+          token.picture = dbUser.image ?? undefined;
+          token.role = dbUser.role ?? "CUSTOMER";
+        }
       }
       return token;
     },

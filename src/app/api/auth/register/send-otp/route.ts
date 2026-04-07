@@ -1,31 +1,24 @@
 import { API_MESSAGES } from "@/lib/api/api-messages";
 import { apiError, apiSuccess } from "@/lib/api/http-responses";
 import { isEmailOtpEnabled } from "@/lib/auth/email-otp-config";
-import { signupOtpIdentifier, verifyOtpAndConsume } from "@/lib/auth/otp-verification-token";
-import bcrypt from "bcryptjs";
+import { createAndStoreOtp, signupOtpIdentifier } from "@/lib/auth/otp-verification-token";
+import { sendAuthOtpEmail } from "@/lib/email/send-auth-otp";
 import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
+    if (!isEmailOtpEnabled()) {
+      return apiError(API_MESSAGES.AUTH.OTP_NOT_CONFIGURED, 503);
+    }
+
     const body = await req.json();
     const emailRaw = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
     const name = typeof body.name === "string" ? body.name.trim() : "";
-    const otp = typeof body.otp === "string" ? body.otp.trim() : "";
 
     const email = emailRaw.toLowerCase();
     if (!email || !password || password.length < 8) {
       return apiError(API_MESSAGES.AUTH.REGISTER_INVALID, 400);
-    }
-
-    if (isEmailOtpEnabled()) {
-      if (!otp) {
-        return apiError(API_MESSAGES.AUTH.OTP_REQUIRED, 400);
-      }
-      const ok = await verifyOtpAndConsume(signupOtpIdentifier(email), otp);
-      if (!ok) {
-        return apiError(API_MESSAGES.AUTH.OTP_INVALID, 400);
-      }
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -33,17 +26,14 @@ export async function POST(req: Request) {
       return apiError(API_MESSAGES.AUTH.REGISTER_EXISTS, 409);
     }
 
-    const hashed = await bcrypt.hash(password, 12);
-    await prisma.user.create({
-      data: {
-        email,
-        password: hashed,
-        name: name || null,
-        emailVerified: isEmailOtpEnabled() ? new Date() : null,
-      },
-    });
+    const otp = await createAndStoreOtp(signupOtpIdentifier(email));
+    await sendAuthOtpEmail(email, otp, "signup");
 
-    return apiSuccess({ registered: true }, API_MESSAGES.AUTH.REGISTER_SUCCESS, 201);
+    return apiSuccess(
+      { sent: true as const },
+      API_MESSAGES.AUTH.OTP_SENT_SIGNUP,
+      200
+    );
   } catch {
     return apiError(API_MESSAGES.COMMON.INTERNAL_ERROR, 500);
   }

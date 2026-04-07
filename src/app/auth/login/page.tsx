@@ -1,9 +1,11 @@
+import { isEmailOtpEnabled } from "@/lib/auth/email-otp-config";
 import { isGoogleAuthEnabled } from "@/lib/google-auth";
 import { Suspense } from "react";
 import { LoginForm } from "./login-form";
 
 export default function LoginPage() {
   const googleAuthEnabled = isGoogleAuthEnabled();
+  const emailOtpEnabled = isEmailOtpEnabled();
 
   return (
     <Suspense
@@ -13,7 +15,10 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginForm googleAuthEnabled={googleAuthEnabled} />
+      <LoginForm
+        googleAuthEnabled={googleAuthEnabled}
+        emailOtpEnabled={emailOtpEnabled}
+      />
     </Suspense>
   );
 }

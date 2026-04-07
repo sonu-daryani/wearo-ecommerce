@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listOrdersForAccount } from "@/lib/orders/list-account-orders";
+import { listOrdersForAccountPage } from "@/lib/orders/list-account-orders";
 import { formatOrderMoney } from "./format-order-money";
 
 function statusLabel(paymentStatus: string, paymentMethod: string) {
@@ -10,10 +10,13 @@ function statusLabel(paymentStatus: string, paymentMethod: string) {
   return paymentStatus;
 }
 
-export async function AccountOrdersSection({ userId }: { userId: string }) {
-  const orders = await listOrdersForAccount(userId);
+type Props = { userId: string; page?: number };
 
-  if (!orders.length) {
+export async function AccountOrdersSection({ userId, page = 1 }: Props) {
+  const { orders, total, page: currentPage, pageSize, totalPages } =
+    await listOrdersForAccountPage(userId, page);
+
+  if (!total) {
     return (
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-foreground mb-2">Your orders</h2>
@@ -29,7 +32,12 @@ export async function AccountOrdersSection({ userId }: { userId: string }) {
     <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-border">
         <h2 className="text-lg font-semibold text-foreground">Your orders</h2>
-        <p className="text-xs text-muted-foreground mt-1">{orders.length} order{orders.length === 1 ? "" : "s"}</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {total} order{total === 1 ? "" : "s"}
+          {totalPages > 1
+            ? ` · Page ${currentPage} of ${totalPages}`
+            : ""}
+        </p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -81,6 +89,32 @@ export async function AccountOrdersSection({ userId }: { userId: string }) {
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t border-border text-sm text-muted-foreground">
+          <span>
+            Showing {(currentPage - 1) * pageSize + 1}–
+            {Math.min(currentPage * pageSize, total)} of {total}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {currentPage > 1 && (
+              <Link
+                href={currentPage === 2 ? "/account" : `/account?ordersPage=${currentPage - 1}`}
+                className="rounded-full border border-border px-3 py-1.5 font-medium text-foreground hover:bg-muted/60"
+              >
+                Previous
+              </Link>
+            )}
+            {currentPage < totalPages && (
+              <Link
+                href={`/account?ordersPage=${currentPage + 1}`}
+                className="rounded-full border border-border px-3 py-1.5 font-medium text-foreground hover:bg-muted/60"
+              >
+                Next
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -31,6 +31,16 @@ const ROLE_MATRIX: Record<Role, Permission[]> = {
     "product:delete",
     "admin:access",
   ],
+  SUPERADMIN: [
+    "cms:read",
+    "cms:write",
+    "cms:publish",
+    "cms:delete",
+    "product:read",
+    "product:write",
+    "product:delete",
+    "admin:access",
+  ],
 };
 
 export function can(role: Role | undefined | null, permission: Permission): boolean {
@@ -39,7 +49,7 @@ export function can(role: Role | undefined | null, permission: Permission): bool
 }
 
 export function isStaffRole(role: Role | undefined | null): boolean {
-  return role === "VIEWER" || role === "EDITOR" || role === "ADMIN";
+  return role === "VIEWER" || role === "EDITOR" || role === "ADMIN" || role === "SUPERADMIN";
 }
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -47,4 +57,5 @@ export const ROLE_LABELS: Record<Role, string> = {
   VIEWER: "CMS Viewer",
   EDITOR: "CMS Editor",
   ADMIN: "Administrator",
+  SUPERADMIN: "Super admin",
 };

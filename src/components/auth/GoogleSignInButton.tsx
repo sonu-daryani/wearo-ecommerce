@@ -39,7 +39,7 @@ export function GoogleSignInButton({
     <Button
       type="button"
       variant="outline"
-      className="w-full rounded-full h-12 border-input gap-2"
+      className="w-full rounded-full h-12 gap-2 border-2 border-slate-300 bg-white text-slate-900 hover:bg-slate-50 shadow-sm"
       onClick={() => signIn("google", { callbackUrl })}
     >
       <GoogleGlyph />

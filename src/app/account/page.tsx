@@ -6,13 +6,19 @@ import { redirect } from "next/navigation";
 import { isStaffRole, ROLE_LABELS } from "@/lib/rbac";
 import type { Role } from "@prisma/client";
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams?: { ordersPage?: string };
+}) {
   const session = await auth();
   if (!session?.user) {
     redirect("/auth/login?callbackUrl=/account");
   }
 
   const { user } = session;
+  const ordersPageRaw = searchParams?.ordersPage ?? "1";
+  const ordersPage = Math.max(1, parseInt(ordersPageRaw, 10) || 1);
   const emailDisplay = user.email?.trim() || "Not provided";
   const role = user.role as Role;
   const staff = isStaffRole(role);
@@ -64,7 +70,7 @@ export default async function AccountPage() {
       </div>
 
       <div className="mt-12 max-w-3xl">
-        <AccountOrdersSection userId={user.id!} />
+        <AccountOrdersSection userId={user.id!} page={ordersPage} />
       </div>
 
       <p className="mt-10">

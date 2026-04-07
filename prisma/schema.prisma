@@ -12,6 +12,7 @@ enum Role {
   VIEWER
   EDITOR
   ADMIN
+  SUPERADMIN
 }
 
 enum CmsType {
@@ -109,6 +110,8 @@ model Product {
   sectionTopSelling    Boolean  @default(false)
   sectionRelated       Boolean  @default(false)
   published            Boolean  @default(true)
+  /// Seeded catalog rows. Only SUPERADMIN may delete (enforced in admin app).
+  isDefault            Boolean  @default(false)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }

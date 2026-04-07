@@ -102,7 +102,10 @@ function OrderConfirmationInner() {
     return (
       <main className="pb-20 max-w-frame mx-auto px-4 xl:px-0 pt-12 text-center">
         <p className="text-black/60 mb-4">{missingTokenMessage ?? "…"}</p>
-        <Button asChild className="rounded-full">
+        <Button
+          asChild
+          className="rounded-full h-12 px-8 bg-slate-900 text-white hover:bg-slate-800 shadow-md border-0"
+        >
           <Link href="/shop">Continue shopping</Link>
         </Button>
       </main>
@@ -121,7 +124,10 @@ function OrderConfirmationInner() {
     return (
       <main className="pb-20 max-w-frame mx-auto px-4 xl:px-0 pt-12 text-center">
         <p className="text-red-700 mb-4">{error ?? "Order not found."}</p>
-        <Button asChild className="rounded-full">
+        <Button
+          asChild
+          className="rounded-full h-12 px-8 bg-slate-900 text-white hover:bg-slate-800 shadow-md border-0"
+        >
           <Link href="/shop">Continue shopping</Link>
         </Button>
       </main>
@@ -239,10 +245,17 @@ function OrderConfirmationInner() {
         </section>
 
         <div className="max-w-3xl mx-auto mt-10 flex flex-wrap justify-center gap-3">
-          <Button asChild className="rounded-full px-8">
+          <Button
+            asChild
+            className="rounded-full px-8 h-12 bg-slate-900 text-white hover:bg-slate-800 shadow-md border-0"
+          >
             <Link href="/shop">Continue shopping</Link>
           </Button>
-          <Button asChild variant="outline" className="rounded-full px-8 border-black/20">
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-full px-8 h-12 border-2 border-slate-900 text-slate-900 bg-white hover:bg-slate-50 shadow-sm"
+          >
             <Link href="/">Home</Link>
           </Button>
         </div>
