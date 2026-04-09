@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { getAuthPageErrorMessage } from "@/lib/auth/auth-error-messages";
 import { postEnvelope } from "@/lib/http/request-handler";
 import { useApiLoading } from "@/hooks/use-api-loading";
 
@@ -22,6 +23,8 @@ export function LoginForm({ googleAuthEnabled, emailOtpEnabled }: Props) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const registerOk = searchParams.get("registered") === "1";
+  const errorParam = searchParams.get("error");
+  const oauthErrorMessage = getAuthPageErrorMessage(errorParam);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,6 +40,12 @@ export function LoginForm({ googleAuthEnabled, emailOtpEnabled }: Props) {
       toast.success("Account created. You can sign in now.");
     }
   }, [registerOk]);
+
+  useEffect(() => {
+    if (oauthErrorMessage) {
+      toast.error(oauthErrorMessage);
+    }
+  }, [oauthErrorMessage]);
 
   async function requestLoginOtp() {
     const res = await postEnvelope<{ sent: true }>("/api/auth/login/send-otp", {
@@ -208,6 +217,21 @@ export function LoginForm({ googleAuthEnabled, emailOtpEnabled }: Props) {
       <p className="text-muted-foreground text-sm mb-8">
         Welcome back to Wearo.in
       </p>
+
+      {oauthErrorMessage && (
+        <div
+          className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          <p className="font-medium text-destructive">Sign-in could not complete</p>
+          <p className="mt-1.5 text-destructive/90 leading-relaxed">{oauthErrorMessage}</p>
+          {errorParam && (
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              Code: <span className="font-mono">{errorParam}</span>
+            </p>
+          )}
+        </div>
+      )}
 
       {googleAuthEnabled && (
         <>
