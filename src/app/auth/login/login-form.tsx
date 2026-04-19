@@ -3,7 +3,7 @@
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -14,17 +14,22 @@ import { useApiLoading } from "@/hooks/use-api-loading";
 type Props = {
   googleAuthEnabled: boolean;
   emailOtpEnabled: boolean;
+  callbackUrl: string;
+  error?: string;
+  registered: boolean;
 };
 
 type Step = "credentials" | "otp";
 
-export function LoginForm({ googleAuthEnabled, emailOtpEnabled }: Props) {
+export function LoginForm({
+  googleAuthEnabled,
+  emailOtpEnabled,
+  callbackUrl,
+  registered: registerOk,
+  error: oauthError,
+}: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
-  const registerOk = searchParams.get("registered") === "1";
-  const errorParam = searchParams.get("error");
-  const oauthErrorMessage = getAuthPageErrorMessage(errorParam);
+  const oauthErrorMessage = getAuthPageErrorMessage(oauthError);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -225,9 +230,9 @@ export function LoginForm({ googleAuthEnabled, emailOtpEnabled }: Props) {
         >
           <p className="font-medium text-destructive">Sign-in could not complete</p>
           <p className="mt-1.5 text-destructive/90 leading-relaxed">{oauthErrorMessage}</p>
-          {errorParam && (
+          {error && (
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Code: <span className="font-mono">{errorParam}</span>
+              Code: <span className="font-mono">{error}</span>
             </p>
           )}
         </div>

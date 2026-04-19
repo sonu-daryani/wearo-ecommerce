@@ -2,13 +2,12 @@ import { auth } from "@/auth";
 import { isEmailOtpEnabled } from "@/lib/auth/email-otp-config";
 import { isGoogleAuthEnabled } from "@/lib/google-auth";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { callbackUrl?: string; error?: string };
+  searchParams?: { callbackUrl?: string; error?: string; registered?: string };
 }) {
   const session = await auth();
   const callbackUrl = searchParams?.callbackUrl || "/";
@@ -19,19 +18,15 @@ export default async function LoginPage({
 
   const googleAuthEnabled = isGoogleAuthEnabled();
   const emailOtpEnabled = isEmailOtpEnabled();
+  const registered = searchParams?.registered === "1";
 
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-md mx-auto px-4 py-24 text-center text-muted-foreground">
-          Loading…
-        </div>
-      }
-    >
-      <LoginForm
-        googleAuthEnabled={googleAuthEnabled}
-        emailOtpEnabled={emailOtpEnabled}
-      />
-    </Suspense>
+    <LoginForm
+      googleAuthEnabled={googleAuthEnabled}
+      emailOtpEnabled={emailOtpEnabled}
+      callbackUrl={callbackUrl}
+      error={oauthError}
+      registered={registered}
+    />
   );
 }

@@ -8,7 +8,13 @@ import { isEmailOtpEnabled } from "@/lib/auth/email-otp-config";
 import { loginOtpIdentifier, verifyOtpAndConsume } from "@/lib/auth/otp-verification-token";
 import prisma from "@/lib/prisma";
 
+const googleEnabledFlag = (process.env.AUTH_GOOGLE_ENABLED ?? "")
+  .trim()
+  .toLowerCase();
+const googleEnabled = googleEnabledFlag === "true" || googleEnabledFlag === "1";
+
 const googleConfigured =
+  googleEnabled &&
   Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
   Boolean(process.env.AUTH_GOOGLE_SECRET?.trim());
 
