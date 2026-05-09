@@ -2,10 +2,12 @@ import type { Role } from "@prisma/client";
 
 export type Permission =
   | "cms:read"
+  | "cms:create"
   | "cms:write"
   | "cms:publish"
   | "cms:delete"
   | "product:read"
+  | "product:create"
   | "product:write"
   | "product:delete"
   | "admin:access";
@@ -13,6 +15,7 @@ export type Permission =
 const ROLE_MATRIX: Record<Role, Permission[]> = {
   CUSTOMER: [],
   VIEWER: ["cms:read", "product:read", "admin:access"],
+  CONTRIBUTOR: [],
   EDITOR: [
     "cms:read",
     "cms:write",
@@ -49,12 +52,19 @@ export function can(role: Role | undefined | null, permission: Permission): bool
 }
 
 export function isStaffRole(role: Role | undefined | null): boolean {
-  return role === "VIEWER" || role === "EDITOR" || role === "ADMIN" || role === "SUPERADMIN";
+  return (
+    role === "VIEWER" ||
+    role === "CONTRIBUTOR" ||
+    role === "EDITOR" ||
+    role === "ADMIN" ||
+    role === "SUPERADMIN"
+  );
 }
 
 export const ROLE_LABELS: Record<Role, string> = {
   CUSTOMER: "Customer",
   VIEWER: "CMS Viewer",
+  CONTRIBUTOR: "Contributor",
   EDITOR: "CMS Editor",
   ADMIN: "Administrator",
   SUPERADMIN: "Super admin",

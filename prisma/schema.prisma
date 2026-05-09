@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   CUSTOMER
   VIEWER
+  CONTRIBUTOR
   EDITOR
   ADMIN
   SUPERADMIN
