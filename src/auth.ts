@@ -6,17 +6,8 @@ import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
 import { isEmailOtpEnabled } from "@/lib/auth/email-otp-config";
 import { loginOtpIdentifier, verifyOtpAndConsume } from "@/lib/auth/otp-verification-token";
+import { isGoogleAuthEnabled } from "@/lib/google-auth";
 import prisma from "@/lib/prisma";
-
-const googleEnabledFlag = (process.env.AUTH_GOOGLE_ENABLED ?? "")
-  .trim()
-  .toLowerCase();
-const googleEnabled = googleEnabledFlag === "true" || googleEnabledFlag === "1";
-
-const googleConfigured =
-  googleEnabled &&
-  Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
-  Boolean(process.env.AUTH_GOOGLE_SECRET?.trim());
 
 /** Required in production; without it every /api/auth/* route returns 500 "server configuration". */
 const authSecret =
@@ -27,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: authSecret,
   adapter: PrismaAdapter(prisma),
   providers: [
-    ...(googleConfigured
+    ...(isGoogleAuthEnabled()
       ? [
           Google({
             clientId: process.env.AUTH_GOOGLE_ID,
