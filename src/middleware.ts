@@ -5,9 +5,13 @@ import type { NextRequest } from "next/server";
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
+  /** Must match Auth.js cookie naming on HTTPS (`__Secure-authjs.session-token`). Default getToken() assumes HTTP-only names and returns null on Vercel. */
+  const secureCookie = req.nextUrl.protocol === "https:";
+
   const token = await getToken({
     req,
     secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+    secureCookie,
   });
 
   if (pathname.startsWith("/account")) {
