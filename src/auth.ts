@@ -74,6 +74,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: "/auth/login",
+    /** Avoid `/api/auth/error` — send failures to login with `?error=` (see `getAuthPageErrorMessage`). */
+    error: "/auth/login",
   },
   callbacks: {
     async jwt({ token, user }) {
