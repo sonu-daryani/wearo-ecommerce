@@ -10,6 +10,14 @@ import { toast } from "react-toastify";
 import { getAuthPageErrorMessage } from "@/lib/auth/auth-error-messages";
 import { postEnvelope } from "@/lib/http/request-handler";
 import { useApiLoading } from "@/hooks/use-api-loading";
+import { Info } from "lucide-react";
+
+/** Override with NEXT_PUBLIC_DEMO_LOGIN_*; hide with NEXT_PUBLIC_HIDE_LOGIN_DEMO=true */
+const DEMO_LOGIN_EMAIL =
+  process.env.NEXT_PUBLIC_DEMO_LOGIN_EMAIL ?? "demo@wearo.in";
+const DEMO_LOGIN_PASSWORD =
+  process.env.NEXT_PUBLIC_DEMO_LOGIN_PASSWORD ?? "admin123+";
+const HIDE_DEMO_CALLOUT = process.env.NEXT_PUBLIC_HIDE_LOGIN_DEMO === "true";
 
 type Props = {
   googleAuthEnabled: boolean;
@@ -223,6 +231,36 @@ export function LoginForm({
         Welcome back to Wearo.in
       </p>
 
+      {!HIDE_DEMO_CALLOUT && !emailOtpEnabled && (
+        <div
+          className="mb-8 flex gap-3 rounded-xl border border-sky-200/90 bg-sky-50/95 px-4 py-3 text-left dark:border-sky-900/50 dark:bg-sky-950/35"
+          role="note"
+        >
+          <Info
+            className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400"
+            aria-hidden
+          />
+          <div className="min-w-0 text-sm">
+            <p className="font-semibold text-sky-950 dark:text-sky-100">Demo sign-in</p>
+            <p className="mt-1 text-xs leading-relaxed text-sky-900/85 dark:text-sky-200/90">
+              Email{" "}
+              <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-foreground dark:bg-sky-900/80">
+                {DEMO_LOGIN_EMAIL}
+              </span>
+              <span className="mx-1 text-sky-700/80 dark:text-sky-400/80">·</span>
+              Password{" "}
+              <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-foreground dark:bg-sky-900/80">
+                {DEMO_LOGIN_PASSWORD}
+              </span>
+            </p>
+            <p className="mt-2 text-[11px] leading-snug text-sky-800/75 dark:text-sky-300/75">
+              Use a seeded account from your database. Hide this block in production with{" "}
+              <span className="font-mono text-[10px]">NEXT_PUBLIC_HIDE_LOGIN_DEMO=true</span>.
+            </p>
+          </div>
+        </div>
+      )}
+
       {oauthErrorMessage && (
         <div
           className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
@@ -230,9 +268,9 @@ export function LoginForm({
         >
           <p className="font-medium text-destructive">Sign-in could not complete</p>
           <p className="mt-1.5 text-destructive/90 leading-relaxed">{oauthErrorMessage}</p>
-          {error && (
+          {oauthError && (
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Code: <span className="font-mono">{error}</span>
+              Code: <span className="font-mono">{oauthError}</span>
             </p>
           )}
         </div>
