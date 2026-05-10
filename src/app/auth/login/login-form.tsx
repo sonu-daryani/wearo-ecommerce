@@ -13,7 +13,7 @@ import { getAuthPageErrorMessage } from "@/lib/auth/auth-error-messages";
 import { isDemoLoginCredentials } from "@/lib/auth/demo-login";
 import { postEnvelope } from "@/lib/http/request-handler";
 import { useApiLoading } from "@/hooks/use-api-loading";
-import { Eye, EyeOff, Info, Lock, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Info, Lock, ShoppingBag } from "lucide-react";
 
 /** Shown on the login card; override with NEXT_PUBLIC_DEMO_LOGIN_*; set NEXT_PUBLIC_HIDE_LOGIN_DEMO=true to hide. */
 const DEMO_LOGIN_EMAIL =
@@ -23,7 +23,24 @@ const DEMO_LOGIN_PASSWORD =
 const HIDE_DEMO_CALLOUT = process.env.NEXT_PUBLIC_HIDE_LOGIN_DEMO === "true";
 
 const inputClass =
-  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none transition-shadow placeholder:text-muted-foreground/70 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring";
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow placeholder:text-slate-400 ring-offset-white focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-900/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:ring-offset-slate-950 dark:focus-visible:ring-white/20";
+
+const primaryCtaClass =
+  "h-12 w-full rounded-full border-0 bg-slate-900 text-base font-semibold text-white shadow-lg shadow-slate-900/20 transition-colors hover:bg-slate-800 hover:text-white focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:shadow-white/10 dark:hover:bg-slate-100 dark:focus-visible:ring-white";
+
+function ContinueShoppingLink() {
+  return (
+    <div className="flex justify-center">
+      <Link
+        href="/shop"
+        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900/50 dark:hover:text-white"
+      >
+        <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+        Continue shopping
+      </Link>
+    </div>
+  );
+}
 
 function LoginShell({ children }: { children: ReactNode }) {
   return (
@@ -177,10 +194,11 @@ export function LoginForm({
   if (emailOtpEnabled && step === "otp") {
     return (
       <LoginShell>
-        <div className="w-full max-w-[440px] space-y-8">
-          <div className="rounded-2xl border border-border/70 bg-card/95 p-8 shadow-xl shadow-slate-900/[0.06] backdrop-blur-sm dark:border-border/60 dark:bg-card/90 dark:shadow-black/30 sm:p-10">
+        <div className="w-full max-w-[440px] space-y-6">
+          <ContinueShoppingLink />
+          <div className="rounded-2xl border border-slate-200/95 bg-white p-8 shadow-[0_24px_56px_-16px_rgba(15,23,42,0.2)] backdrop-blur-sm dark:border-slate-700/90 dark:bg-slate-950/90 dark:shadow-black/40 sm:p-10">
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-1 ring-primary/20">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-white shadow-lg shadow-slate-900/30 ring-1 ring-white/15 dark:from-white dark:to-slate-200 dark:text-slate-900 dark:shadow-white/10">
                 <ShoppingBag className="h-7 w-7" strokeWidth={1.75} aria-hidden />
               </div>
               <p className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -221,11 +239,7 @@ export function LoginForm({
                   {error}
                 </p>
               )}
-              <Button
-                type="submit"
-                className="h-12 w-full rounded-full text-base font-semibold shadow-md shadow-primary/20"
-                disabled={loading}
-              >
+              <Button type="submit" className={primaryCtaClass} disabled={loading}>
                 {loading ? "Signing in…" : "Sign in"}
               </Button>
             </form>
@@ -259,11 +273,11 @@ export function LoginForm({
             </div>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400">
             No account?{" "}
             <Link
               href="/auth/register"
-              className="font-semibold text-foreground underline decoration-foreground/40 underline-offset-4 hover:text-primary"
+              className="font-semibold text-slate-900 underline decoration-slate-400 underline-offset-4 hover:text-slate-700 dark:text-white dark:decoration-slate-600 dark:hover:text-slate-200"
             >
               Create one
             </Link>
@@ -275,27 +289,28 @@ export function LoginForm({
 
   return (
     <LoginShell>
-      <div className="w-full max-w-[440px] space-y-8">
-        <div className="rounded-2xl border border-border/70 bg-card/95 p-8 shadow-xl shadow-slate-900/[0.06] backdrop-blur-sm dark:border-border/60 dark:bg-card/90 dark:shadow-black/30 sm:p-10">
+      <div className="w-full max-w-[440px] space-y-6">
+        <ContinueShoppingLink />
+        <div className="rounded-2xl border border-slate-200/95 bg-white p-8 shadow-[0_24px_56px_-16px_rgba(15,23,42,0.2)] backdrop-blur-sm dark:border-slate-700/90 dark:bg-slate-950/90 dark:shadow-black/40 sm:p-10">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-1 ring-primary/20">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-white shadow-lg shadow-slate-900/30 ring-1 ring-white/15 dark:from-white dark:to-slate-200 dark:text-slate-900 dark:shadow-white/10">
               <ShoppingBag className="h-7 w-7" strokeWidth={1.75} aria-hidden />
             </div>
-            <p className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
               <Lock className="h-3 w-3" aria-hidden />
               Customer account
             </p>
-            <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-[1.65rem]">
+            <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-[1.65rem]">
               Sign in to {SITE_DOMAIN}
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
               {SITE_NAME} · {SITE_DOMAIN} — shop, cart, orders, and your profile.
             </p>
           </div>
 
           {!HIDE_DEMO_CALLOUT && (
             <div
-              className="mb-6 flex gap-3 rounded-xl border border-sky-200/90 bg-sky-50/95 px-4 py-3 text-left dark:border-sky-900/50 dark:bg-sky-950/35"
+              className="mb-6 flex gap-3 rounded-xl border border-sky-300/80 bg-gradient-to-b from-sky-50 to-sky-100/90 px-4 py-3.5 text-left shadow-sm shadow-sky-900/5 dark:border-sky-800/60 dark:from-sky-950/80 dark:to-sky-950/40"
               role="note"
             >
               <Info
@@ -328,13 +343,13 @@ export function LoginForm({
 
           {oauthErrorMessage && (
             <div
-              className="mb-7 rounded-xl border border-destructive/35 bg-destructive/5 px-4 py-3.5 text-sm text-destructive"
+              className="mb-7 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
               role="alert"
             >
-              <p className="font-semibold text-destructive">Sign-in could not complete</p>
-              <p className="mt-2 leading-relaxed text-destructive/95">{oauthErrorMessage}</p>
+              <p className="font-semibold text-red-950 dark:text-red-50">Sign-in could not complete</p>
+              <p className="mt-2 leading-relaxed text-red-900/95 dark:text-red-100/95">{oauthErrorMessage}</p>
               {oauthError && (
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                <p className="mt-3 text-xs leading-relaxed text-red-800/80 dark:text-red-200/80">
                   Code: <span className="font-mono">{oauthError}</span>
                 </p>
               )}
@@ -349,10 +364,12 @@ export function LoginForm({
 
               <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
+                  <span className="w-full border-t border-slate-200 dark:border-slate-700" />
                 </div>
                 <div className="relative flex justify-center text-[11px] font-medium uppercase tracking-widest">
-                  <span className="bg-card px-3 text-muted-foreground">Or use email</span>
+                  <span className="bg-white px-3 text-slate-500 dark:bg-slate-950 dark:text-slate-500">
+                    Or use email
+                  </span>
                 </div>
               </div>
             </>
@@ -406,7 +423,7 @@ export function LoginForm({
               </div>
             </div>
             {emailOtpEnabled && (
-              <p className="text-xs leading-relaxed text-muted-foreground">
+              <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
                 After you continue, we email a one-time code — unless you use the public demo
                 credentials above.
               </p>
@@ -416,11 +433,7 @@ export function LoginForm({
                 {error}
               </p>
             )}
-            <Button
-              type="submit"
-              className="h-12 w-full rounded-full text-base font-semibold shadow-md shadow-primary/20"
-              disabled={loading}
-            >
+            <Button type="submit" className={primaryCtaClass} disabled={loading}>
               {loading
                 ? emailOtpEnabled
                   ? "Sending code…"
@@ -433,16 +446,16 @@ export function LoginForm({
         </div>
 
         <div className="space-y-2 text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             No account?{" "}
             <Link
               href="/auth/register"
-              className="font-semibold text-foreground underline decoration-foreground/40 underline-offset-4 hover:text-primary"
+              className="font-semibold text-slate-900 underline decoration-slate-400 underline-offset-4 hover:text-slate-700 dark:text-white dark:decoration-slate-600 dark:hover:text-slate-200"
             >
               Create one
             </Link>
           </p>
-          <p className="text-xs leading-relaxed text-muted-foreground/90">
+          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-500">
             Public demo credentials are optional — disable them when you go live.
           </p>
         </div>
