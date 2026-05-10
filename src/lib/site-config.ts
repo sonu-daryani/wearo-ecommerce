@@ -43,6 +43,17 @@ export function absoluteUrl(path: string): string {
   return `${origin}${p}`;
 }
 
+/**
+ * Staff “Open admin” link on the storefront account page.
+ * Prefer `NEXT_PUBLIC_ADMIN_PORTAL_URL` (e.g. production admin origin).
+ * If unset, `/__/admin` (same-origin rewrite when `ADMIN_APP_ORIGIN` is set at build — see `next.config.mjs`).
+ */
+export function getAdminPortalHref(): string {
+  const raw = process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL?.trim();
+  if (raw) return raw.replace(/\/$/, "");
+  return "/__/admin";
+}
+
 export function formatCategoryLabel(slug: string): string {
   return CATEGORY_LABELS[slug] ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

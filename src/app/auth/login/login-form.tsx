@@ -7,13 +7,20 @@ import { SITE_DOMAIN, SITE_NAME } from "@/lib/site-config";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "react-toastify";
 import { getAuthPageErrorMessage } from "@/lib/auth/auth-error-messages";
 import { isDemoLoginCredentials } from "@/lib/auth/demo-login";
 import { postEnvelope } from "@/lib/http/request-handler";
 import { useApiLoading } from "@/hooks/use-api-loading";
-import { ArrowLeft, Eye, EyeOff, Info, Lock, ShoppingBag } from "lucide-react";
+import {
+  AuthPageShell,
+  ContinueShoppingLink,
+  authCardClass,
+  authInputClass,
+  authPrimaryCtaClass,
+} from "@/components/auth/auth-page-shell";
+import { Eye, EyeOff, Info, Lock, ShoppingBag } from "lucide-react";
 
 /** Shown on the login card; override with NEXT_PUBLIC_DEMO_LOGIN_*; set NEXT_PUBLIC_HIDE_LOGIN_DEMO=true to hide. */
 const DEMO_LOGIN_EMAIL =
@@ -21,45 +28,6 @@ const DEMO_LOGIN_EMAIL =
 const DEMO_LOGIN_PASSWORD =
   process.env.NEXT_PUBLIC_DEMO_LOGIN_PASSWORD ?? "admin123+";
 const HIDE_DEMO_CALLOUT = process.env.NEXT_PUBLIC_HIDE_LOGIN_DEMO === "true";
-
-const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-shadow placeholder:text-slate-400 ring-offset-white focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-900/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:ring-offset-slate-950 dark:focus-visible:ring-white/20";
-
-const primaryCtaClass =
-  "h-12 w-full rounded-full border-0 bg-slate-900 text-base font-semibold text-white shadow-lg shadow-slate-900/20 transition-colors hover:bg-slate-800 hover:text-white focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:shadow-white/10 dark:hover:bg-slate-100 dark:focus-visible:ring-white";
-
-function ContinueShoppingLink() {
-  return (
-    <div className="flex justify-center">
-      <Link
-        href="/shop"
-        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900/50 dark:hover:text-white"
-      >
-        <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-        Continue shopping
-      </Link>
-    </div>
-  );
-}
-
-function LoginShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-background to-sky-50 dark:from-slate-950 dark:via-background dark:to-slate-900">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35] dark:opacity-20"
-        style={{
-          backgroundImage: `radial-gradient(at 0% 0%, hsl(var(--primary) / 0.12) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, hsl(199 89% 48% / 0.1) 0px, transparent 45%)`,
-        }}
-        aria-hidden
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.45)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.45)_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,#000_45%,transparent)] dark:opacity-40" />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:py-16">
-        {children}
-      </div>
-    </div>
-  );
-}
 
 type Props = {
   googleAuthEnabled: boolean;
@@ -193,10 +161,10 @@ export function LoginForm({
 
   if (emailOtpEnabled && step === "otp") {
     return (
-      <LoginShell>
+      <AuthPageShell>
         <div className="w-full max-w-[440px] space-y-6">
           <ContinueShoppingLink />
-          <div className="rounded-2xl border border-slate-200/95 bg-white p-8 shadow-[0_24px_56px_-16px_rgba(15,23,42,0.2)] backdrop-blur-sm dark:border-slate-700/90 dark:bg-slate-950/90 dark:shadow-black/40 sm:p-10">
+          <div className={authCardClass}>
             <div className="mb-8 text-center">
               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-white shadow-lg shadow-slate-900/30 ring-1 ring-white/15 dark:from-white dark:to-slate-200 dark:text-slate-900 dark:shadow-white/10">
                 <ShoppingBag className="h-7 w-7" strokeWidth={1.75} aria-hidden />
@@ -230,7 +198,7 @@ export function LoginForm({
                   required
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className={cn(inputClass, "tracking-widest font-mono")}
+                  className={cn(authInputClass, "tracking-widest font-mono")}
                   placeholder="000000"
                 />
               </div>
@@ -239,7 +207,7 @@ export function LoginForm({
                   {error}
                 </p>
               )}
-              <Button type="submit" className={primaryCtaClass} disabled={loading}>
+              <Button type="submit" className={authPrimaryCtaClass} disabled={loading}>
                 {loading ? "Signing in…" : "Sign in"}
               </Button>
             </form>
@@ -283,15 +251,15 @@ export function LoginForm({
             </Link>
           </p>
         </div>
-      </LoginShell>
+      </AuthPageShell>
     );
   }
 
   return (
-    <LoginShell>
+    <AuthPageShell>
       <div className="w-full max-w-[440px] space-y-6">
         <ContinueShoppingLink />
-        <div className="rounded-2xl border border-slate-200/95 bg-white p-8 shadow-[0_24px_56px_-16px_rgba(15,23,42,0.2)] backdrop-blur-sm dark:border-slate-700/90 dark:bg-slate-950/90 dark:shadow-black/40 sm:p-10">
+        <div className={authCardClass}>
           <div className="mb-8 text-center">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-white shadow-lg shadow-slate-900/30 ring-1 ring-white/15 dark:from-white dark:to-slate-200 dark:text-slate-900 dark:shadow-white/10">
               <ShoppingBag className="h-7 w-7" strokeWidth={1.75} aria-hidden />
@@ -389,7 +357,7 @@ export function LoginForm({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className={inputClass}
+                className={authInputClass}
               />
             </div>
             <div className="space-y-2">
@@ -406,7 +374,7 @@ export function LoginForm({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className={cn(inputClass, "pr-12")}
+                  className={cn(authInputClass, "pr-12")}
                 />
                 <button
                   type="button"
@@ -433,7 +401,7 @@ export function LoginForm({
                 {error}
               </p>
             )}
-            <Button type="submit" className={primaryCtaClass} disabled={loading}>
+            <Button type="submit" className={authPrimaryCtaClass} disabled={loading}>
               {loading
                 ? emailOtpEnabled
                   ? "Sending code…"
@@ -460,6 +428,6 @@ export function LoginForm({
           </p>
         </div>
       </div>
-    </LoginShell>
+    </AuthPageShell>
   );
 }

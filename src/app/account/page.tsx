@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import SignOutButton from "@/components/auth/SignOutButton";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { isStaffRole, ROLE_LABELS } from "@/lib/rbac";
+import { can, ROLE_LABELS } from "@/lib/rbac";
+import { getAdminPortalHref } from "@/lib/site-config";
 import type { Role } from "@prisma/client";
 
 export default async function AccountPage({
@@ -21,7 +22,9 @@ export default async function AccountPage({
   const ordersPage = Math.max(1, parseInt(ordersPageRaw, 10) || 1);
   const emailDisplay = user.email?.trim() || "Not provided";
   const role = user.role as Role;
-  const staff = isStaffRole(role);
+  const showAdminPortal = can(role, "admin:access");
+  const adminPortalHref = getAdminPortalHref();
+  const adminOpensNewTab = /^https?:\/\//i.test(adminPortalHref);
 
   return (
     <div className="max-w-frame mx-auto px-4 py-16 md:py-20">
@@ -54,17 +57,18 @@ export default async function AccountPage({
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Access role</p>
           <p className="text-foreground font-medium">{ROLE_LABELS[role]}</p>
         </div>
-        {staff && process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL?.trim() && (
-          <a
-            href={process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL.replace(/\/$/, "")}
-            className="inline-flex rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Admin portal
-          </a>
+        {showAdminPortal && (
+          <div className="flex flex-col gap-3 pt-2">
+            <a
+              href={adminPortalHref}
+              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+              {...(adminOpensNewTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
+              Open admin
+            </a>
+          </div>
         )}
-        <div className="pt-4">
+        <div className={showAdminPortal ? "pt-2" : "pt-4"}>
           <SignOutButton />
         </div>
       </div>
