@@ -8,6 +8,7 @@ import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getAuthPageErrorMessage } from "@/lib/auth/auth-error-messages";
+import { isDemoLoginCredentials } from "@/lib/auth/demo-login";
 import { postEnvelope } from "@/lib/http/request-handler";
 import { useApiLoading } from "@/hooks/use-api-loading";
 import { Info } from "lucide-react";
@@ -79,7 +80,11 @@ export function LoginForm({
     setError("");
     setLoading(true);
     try {
-      if (emailOtpEnabled) {
+      const emailNorm = email.trim().toLowerCase();
+      const bypassOtpForDemo =
+        emailOtpEnabled && isDemoLoginCredentials(emailNorm, password);
+
+      if (emailOtpEnabled && !bypassOtpForDemo) {
         const ok = await requestLoginOtp();
         if (ok) {
           setOtp("");
@@ -90,7 +95,7 @@ export function LoginForm({
       }
 
       const res = await signIn("credentials", {
-        email: email.trim().toLowerCase(),
+        email: emailNorm,
         password,
         redirect: false,
       });
@@ -231,7 +236,7 @@ export function LoginForm({
         Welcome back to Wearo.in
       </p>
 
-      {!HIDE_DEMO_CALLOUT && !emailOtpEnabled && (
+      {!HIDE_DEMO_CALLOUT && (
         <div
           className="mb-8 flex gap-3 rounded-xl border border-sky-200/90 bg-sky-50/95 px-4 py-3 text-left dark:border-sky-900/50 dark:bg-sky-950/35"
           role="note"
@@ -254,7 +259,9 @@ export function LoginForm({
               </span>
             </p>
             <p className="mt-2 text-[11px] leading-snug text-sky-800/75 dark:text-sky-300/75">
-              Use a seeded account from your database. Hide this block in production with{" "}
+              {emailOtpEnabled
+                ? "This pair skips email OTP. Other accounts still get a code. Hide in production with "
+                : "Use a seeded account from your database. Hide this block in production with "}
               <span className="font-mono text-[10px]">NEXT_PUBLIC_HIDE_LOGIN_DEMO=true</span>.
             </p>
           </div>

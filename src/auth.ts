@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
+import { isDemoLoginCredentials } from "@/lib/auth/demo-login";
 import { isEmailOtpEnabled } from "@/lib/auth/email-otp-config";
 import { loginOtpIdentifier, verifyOtpAndConsume } from "@/lib/auth/otp-verification-token";
 import { isGoogleAuthEnabled } from "@/lib/google-auth";
@@ -52,7 +53,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
 
-        if (isEmailOtpEnabled()) {
+        if (isEmailOtpEnabled() && !isDemoLoginCredentials(email, password)) {
           const otp = credentials?.otp ? String(credentials.otp).trim() : "";
           if (!otp) return null;
           const otpOk = await verifyOtpAndConsume(loginOtpIdentifier(email), otp);
