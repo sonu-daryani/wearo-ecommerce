@@ -2,23 +2,47 @@
 
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { SITE_DOMAIN, SITE_NAME } from "@/lib/site-config";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { toast } from "react-toastify";
 import { getAuthPageErrorMessage } from "@/lib/auth/auth-error-messages";
 import { isDemoLoginCredentials } from "@/lib/auth/demo-login";
 import { postEnvelope } from "@/lib/http/request-handler";
 import { useApiLoading } from "@/hooks/use-api-loading";
-import { Info } from "lucide-react";
+import { Eye, EyeOff, Info, Lock, ShoppingBag } from "lucide-react";
 
-/** Override with NEXT_PUBLIC_DEMO_LOGIN_*; hide with NEXT_PUBLIC_HIDE_LOGIN_DEMO=true */
+/** Shown on the login card; override with NEXT_PUBLIC_DEMO_LOGIN_*; set NEXT_PUBLIC_HIDE_LOGIN_DEMO=true to hide. */
 const DEMO_LOGIN_EMAIL =
   process.env.NEXT_PUBLIC_DEMO_LOGIN_EMAIL ?? "demo@wearo.in";
 const DEMO_LOGIN_PASSWORD =
   process.env.NEXT_PUBLIC_DEMO_LOGIN_PASSWORD ?? "admin123+";
 const HIDE_DEMO_CALLOUT = process.env.NEXT_PUBLIC_HIDE_LOGIN_DEMO === "true";
+
+const inputClass =
+  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none transition-shadow placeholder:text-muted-foreground/70 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring";
+
+function LoginShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-background to-sky-50 dark:from-slate-950 dark:via-background dark:to-slate-900">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.35] dark:opacity-20"
+        style={{
+          backgroundImage: `radial-gradient(at 0% 0%, hsl(var(--primary) / 0.12) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, hsl(199 89% 48% / 0.1) 0px, transparent 45%)`,
+        }}
+        aria-hidden
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.45)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.45)_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,#000_45%,transparent)] dark:opacity-40" />
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:py-16">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   googleAuthEnabled: boolean;
@@ -39,6 +63,9 @@ export function LoginForm({
 }: Props) {
   const router = useRouter();
   const oauthErrorMessage = getAuthPageErrorMessage(oauthError);
+  const emailId = useId();
+  const passwordId = useId();
+  const otpId = useId();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,6 +73,7 @@ export function LoginForm({
   const [step, setStep] = useState<Step>("credentials");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { loading: otpActionLoading, withLoading: withOtpActionLoading } =
     useApiLoading();
 
@@ -148,228 +176,277 @@ export function LoginForm({
 
   if (emailOtpEnabled && step === "otp") {
     return (
-      <div className="max-w-md mx-auto px-4 py-16 md:py-24">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Check your email</h1>
-        <p className="text-muted-foreground text-sm mb-6">
-          Enter the 6-digit code we sent to <span className="font-medium text-foreground">{email}</span>.
-        </p>
+      <LoginShell>
+        <div className="w-full max-w-[440px] space-y-8">
+          <div className="rounded-2xl border border-border/70 bg-card/95 p-8 shadow-xl shadow-slate-900/[0.06] backdrop-blur-sm dark:border-border/60 dark:bg-card/90 dark:shadow-black/30 sm:p-10">
+            <div className="mb-8 text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-1 ring-primary/20">
+                <ShoppingBag className="h-7 w-7" strokeWidth={1.75} aria-hidden />
+              </div>
+              <p className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <Lock className="h-3 w-3" aria-hidden />
+                Email verification
+              </p>
+              <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-[1.65rem]">
+                Check your email
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Enter the 6-digit code we sent to{" "}
+                <span className="font-medium text-foreground">{email}</span>.
+              </p>
+            </div>
 
-        <form onSubmit={onSubmitOtp} className="space-y-4">
-          <div>
-            <label htmlFor="otp" className="block text-sm font-medium mb-1.5">
-              Verification code
-            </label>
-            <input
-              id="otp"
-              name="otp"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="\d{6}"
-              maxLength={6}
-              required
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm tracking-widest font-mono outline-none ring-ring focus-visible:ring-2"
-              placeholder="000000"
-            />
+            <form onSubmit={onSubmitOtp} className="space-y-5">
+              <div className="space-y-2">
+                <label htmlFor={otpId} className="text-sm font-medium text-foreground">
+                  Verification code
+                </label>
+                <input
+                  id={otpId}
+                  name="otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  required
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className={cn(inputClass, "tracking-widest font-mono")}
+                  placeholder="000000"
+                />
+              </div>
+              {error && (
+                <p className="text-sm font-medium text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="h-12 w-full rounded-full text-base font-semibold shadow-md shadow-primary/20"
+                disabled={loading}
+              >
+                {loading ? "Signing in…" : "Sign in"}
+              </Button>
+            </form>
+
+            <div className="mt-6 flex flex-col gap-3 text-sm">
+              <button
+                type="button"
+                className="text-muted-foreground underline decoration-muted-foreground/50 underline-offset-4 hover:text-foreground disabled:opacity-50"
+                onClick={() =>
+                  withOtpActionLoading(async () => {
+                    setError("");
+                    await requestLoginOtp();
+                  })
+                }
+                disabled={otpActionLoading}
+              >
+                Resend code
+              </button>
+              <button
+                type="button"
+                className="text-left text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setStep("credentials");
+                  setOtp("");
+                  setError("");
+                }}
+                disabled={loading}
+              >
+                ← Back to sign in
+              </button>
+            </div>
           </div>
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          )}
-          <Button
-            type="submit"
-            className="w-full rounded-full h-12 bg-slate-900 text-white hover:bg-slate-800 shadow-sm border-0"
-            disabled={loading}
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </Button>
-        </form>
 
-        <div className="mt-6 flex flex-col gap-3 text-sm">
-          <button
-            type="button"
-            className="text-slate-700 underline decoration-slate-400 underline-offset-4 hover:text-indigo-700 disabled:opacity-50"
-            onClick={() =>
-              withOtpActionLoading(async () => {
-                setError("");
-                await requestLoginOtp();
-              })
-            }
-            disabled={otpActionLoading}
-          >
-            Resend code
-          </button>
-          <button
-            type="button"
-            className="text-slate-600 hover:text-foreground text-left"
-            onClick={() => {
-              setStep("credentials");
-              setOtp("");
-              setError("");
-            }}
-            disabled={loading}
-          >
-            ← Back
-          </button>
+          <p className="text-center text-sm text-muted-foreground">
+            No account?{" "}
+            <Link
+              href="/auth/register"
+              className="font-semibold text-foreground underline decoration-foreground/40 underline-offset-4 hover:text-primary"
+            >
+              Create one
+            </Link>
+          </p>
         </div>
-
-        <p className="mt-8 text-center text-sm text-slate-600">
-          No account?{" "}
-          <Link
-            href="/auth/register"
-            className="font-semibold text-slate-900 underline decoration-slate-900/50 underline-offset-4 hover:text-indigo-700 hover:decoration-indigo-700"
-          >
-            Create one
-          </Link>
-        </p>
-      </div>
+      </LoginShell>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16 md:py-24">
-      <h1 className="text-3xl font-bold text-foreground mb-2">Sign in</h1>
-      <p className="text-muted-foreground text-sm mb-8">
-        Welcome back to Wearo.in
-      </p>
-
-      {!HIDE_DEMO_CALLOUT && (
-        <div
-          className="mb-8 flex gap-3 rounded-xl border border-sky-200/90 bg-sky-50/95 px-4 py-3 text-left dark:border-sky-900/50 dark:bg-sky-950/35"
-          role="note"
-        >
-          <Info
-            className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400"
-            aria-hidden
-          />
-          <div className="min-w-0 text-sm">
-            <p className="font-semibold text-sky-950 dark:text-sky-100">Demo sign-in</p>
-            <p className="mt-1 text-xs leading-relaxed text-sky-900/85 dark:text-sky-200/90">
-              Email{" "}
-              <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-foreground dark:bg-sky-900/80">
-                {DEMO_LOGIN_EMAIL}
-              </span>
-              <span className="mx-1 text-sky-700/80 dark:text-sky-400/80">·</span>
-              Password{" "}
-              <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-foreground dark:bg-sky-900/80">
-                {DEMO_LOGIN_PASSWORD}
-              </span>
+    <LoginShell>
+      <div className="w-full max-w-[440px] space-y-8">
+        <div className="rounded-2xl border border-border/70 bg-card/95 p-8 shadow-xl shadow-slate-900/[0.06] backdrop-blur-sm dark:border-border/60 dark:bg-card/90 dark:shadow-black/30 sm:p-10">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-1 ring-primary/20">
+              <ShoppingBag className="h-7 w-7" strokeWidth={1.75} aria-hidden />
+            </div>
+            <p className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <Lock className="h-3 w-3" aria-hidden />
+              Customer account
             </p>
-            <p className="mt-2 text-[11px] leading-snug text-sky-800/75 dark:text-sky-300/75">
-              {emailOtpEnabled
-                ? "This pair skips email OTP. Other accounts still get a code. Hide in production with "
-                : "Use a seeded account from your database. Hide this block in production with "}
-              <span className="font-mono text-[10px]">NEXT_PUBLIC_HIDE_LOGIN_DEMO=true</span>.
+            <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-[1.65rem]">
+              Sign in to {SITE_DOMAIN}
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {SITE_NAME} · {SITE_DOMAIN} — shop, cart, orders, and your profile.
             </p>
           </div>
-        </div>
-      )}
 
-      {oauthErrorMessage && (
-        <div
-          className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
-          role="alert"
-        >
-          <p className="font-medium text-destructive">Sign-in could not complete</p>
-          <p className="mt-1.5 text-destructive/90 leading-relaxed">{oauthErrorMessage}</p>
-          {oauthError && (
-            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Code: <span className="font-mono">{oauthError}</span>
-            </p>
+          {!HIDE_DEMO_CALLOUT && (
+            <div
+              className="mb-6 flex gap-3 rounded-xl border border-sky-200/90 bg-sky-50/95 px-4 py-3 text-left dark:border-sky-900/50 dark:bg-sky-950/35"
+              role="note"
+            >
+              <Info
+                className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400"
+                aria-hidden
+              />
+              <div className="min-w-0 text-sm">
+                <p className="font-semibold text-sky-950 dark:text-sky-100">
+                  Public storefront demo (CUSTOMER)
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-sky-900/85 dark:text-sky-200/90">
+                  Email{" "}
+                  <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-foreground dark:bg-sky-900/80">
+                    {DEMO_LOGIN_EMAIL}
+                  </span>
+                  <span className="mx-1 text-sky-700/80 dark:text-sky-400/80">·</span>
+                  Password{" "}
+                  <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-foreground dark:bg-sky-900/80">
+                    {DEMO_LOGIN_PASSWORD}
+                  </span>
+                </p>
+                <p className="mt-2 text-[11px] leading-snug text-sky-800/75 dark:text-sky-300/75">
+                  {emailOtpEnabled
+                    ? "Skips email OTP for this pair only — other sign-ins still receive a code. Requires a seeded user in your database."
+                    : "Browse and buy with a seeded customer account in your database."}
+                </p>
+              </div>
+            </div>
           )}
-        </div>
-      )}
 
-      {googleAuthEnabled && (
-        <>
-          <div className="space-y-3 mb-8">
-            <GoogleSignInButton callbackUrl={callbackUrl} />
-          </div>
-
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
+          {oauthErrorMessage && (
+            <div
+              className="mb-7 rounded-xl border border-destructive/35 bg-destructive/5 px-4 py-3.5 text-sm text-destructive"
+              role="alert"
+            >
+              <p className="font-semibold text-destructive">Sign-in could not complete</p>
+              <p className="mt-2 leading-relaxed text-destructive/95">{oauthErrorMessage}</p>
+              {oauthError && (
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  Code: <span className="font-mono">{oauthError}</span>
+                </p>
+              )}
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or use email
-              </span>
+          )}
+
+          {googleAuthEnabled && (
+            <>
+              <div className="space-y-3">
+                <GoogleSignInButton callbackUrl={callbackUrl} />
+              </div>
+
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-[11px] font-medium uppercase tracking-widest">
+                  <span className="bg-card px-3 text-muted-foreground">Or use email</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          <form onSubmit={onSubmitCredentials} className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor={emailId} className="text-sm font-medium text-foreground">
+                Email
+              </label>
+              <input
+                id={emailId}
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={inputClass}
+              />
             </div>
-          </div>
-        </>
-      )}
-
-      <form onSubmit={onSubmitCredentials} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1.5">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none ring-ring focus-visible:ring-2"
-          />
+            <div className="space-y-2">
+              <label htmlFor={passwordId} className="text-sm font-medium text-foreground">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id={passwordId}
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={cn(inputClass, "pr-12")}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden />
+                  )}
+                </button>
+              </div>
+            </div>
+            {emailOtpEnabled && (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                After you continue, we email a one-time code — unless you use the public demo
+                credentials above.
+              </p>
+            )}
+            {error && (
+              <p className="text-sm font-medium text-destructive" role="alert">
+                {error}
+              </p>
+            )}
+            <Button
+              type="submit"
+              className="h-12 w-full rounded-full text-base font-semibold shadow-md shadow-primary/20"
+              disabled={loading}
+            >
+              {loading
+                ? emailOtpEnabled
+                  ? "Sending code…"
+                  : "Signing in…"
+                : emailOtpEnabled
+                  ? "Continue"
+                  : "Sign in"}
+            </Button>
+          </form>
         </div>
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium mb-1.5"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none ring-ring focus-visible:ring-2"
-          />
-        </div>
-        {emailOtpEnabled && (
-          <p className="text-xs text-muted-foreground">
-            After you continue, we will email you a one-time code to finish signing in.
-          </p>
-        )}
-        {error && (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        )}
-        <Button
-          type="submit"
-          className="w-full rounded-full h-12 bg-slate-900 text-white hover:bg-slate-800 shadow-sm border-0"
-          disabled={loading}
-        >
-          {loading
-            ? emailOtpEnabled
-              ? "Sending code…"
-              : "Signing in…"
-            : emailOtpEnabled
-              ? "Continue"
-              : "Sign in"}
-        </Button>
-      </form>
 
-      <p className="mt-8 text-center text-sm text-slate-600">
-        No account?{" "}
-        <Link
-          href="/auth/register"
-          className="font-semibold text-slate-900 underline decoration-slate-900/50 underline-offset-4 hover:text-indigo-700 hover:decoration-indigo-700"
-        >
-          Create one
-        </Link>
-      </p>
-    </div>
+        <div className="space-y-2 text-center">
+          <p className="text-sm text-muted-foreground">
+            No account?{" "}
+            <Link
+              href="/auth/register"
+              className="font-semibold text-foreground underline decoration-foreground/40 underline-offset-4 hover:text-primary"
+            >
+              Create one
+            </Link>
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground/90">
+            Public demo credentials are optional — disable them when you go live.
+          </p>
+        </div>
+      </div>
+    </LoginShell>
   );
 }
