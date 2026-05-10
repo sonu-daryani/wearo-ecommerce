@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Orders help",
-  description: `Order confirmations, changes, and cancellations on ${SITE_NAME}.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function HelpOrdersPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("help-orders", {
+    title: "Orders help",
+    description: `Order confirmations, changes, and cancellations on ${SITE_NAME}.`,
+  });
+}
+
+export default async function HelpOrdersPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="help-orders"
       title="Orders help"
       breadcrumbParent={{ label: "Help", href: "/support" }}
       breadcrumbCurrent="Orders"
@@ -36,6 +42,6 @@ export default function HelpOrdersPage() {
         Tell us within the timeframe stated in your confirmation or campaign terms. Photos help us
         resolve issues faster.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

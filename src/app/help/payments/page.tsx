@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Payments help",
-  description: `Paying securely on ${SITE_NAME} — cards, UPI, wallets, and failed payments.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function HelpPaymentsPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("help-payments", {
+    title: "Payments help",
+    description: `Paying securely on ${SITE_NAME} — cards, UPI, wallets, and failed payments.`,
+  });
+}
+
+export default async function HelpPaymentsPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="help-payments"
       title="Payments help"
       breadcrumbParent={{ label: "Help", href: "/support" }}
       breadcrumbCurrent="Payments"
@@ -37,6 +43,6 @@ export default function HelpPaymentsPage() {
       <p>
         Approved refunds return to the original payment method where possible; bank timelines vary.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

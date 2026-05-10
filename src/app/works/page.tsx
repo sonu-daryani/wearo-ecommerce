@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "How it works",
-  description: `How shopping on ${SITE_NAME} works — from browsing to delivery.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function WorksPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("works", {
+    title: "How it works",
+    description: `How shopping on ${SITE_NAME} works — from browsing to delivery.`,
+  });
+}
+
+export default async function WorksPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="works"
       title="How it works"
       breadcrumbCurrent="Works"
       description="From discovering styles to receiving your order — here’s the journey."
@@ -35,6 +41,6 @@ export default function WorksPage() {
         Use your order confirmation and account area where available. Questions?{" "}
         <Link href="/support">Contact support</Link>.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

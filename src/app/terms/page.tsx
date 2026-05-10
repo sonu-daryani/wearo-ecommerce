@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_DOMAIN, SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Terms & conditions",
-  description: `Terms of use for shopping on ${SITE_DOMAIN}.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function TermsPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("terms", {
+    title: "Terms & conditions",
+    description: `Terms of use for shopping on ${SITE_DOMAIN}.`,
+  });
+}
+
+export default async function TermsPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="terms"
       title="Terms & conditions"
       breadcrumbCurrent="Terms"
       description="Please read these terms before using our website and placing orders."
@@ -54,6 +60,6 @@ export default function TermsPage() {
         Questions about these terms? Reach us via the channels on our{" "}
         <Link href="/support">support</Link> page.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

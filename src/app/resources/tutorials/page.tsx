@@ -1,15 +1,21 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Tutorials",
-  description: "Step-by-step tutorials for shopping, sizing, and garment care.",
-};
+export const dynamic = "force-dynamic";
 
-export default function ResourcesTutorialsPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("resources-tutorials", {
+    title: "Tutorials",
+    description: "Step-by-step tutorials for shopping, sizing, and garment care.",
+  });
+}
+
+export default async function ResourcesTutorialsPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="resources-tutorials"
       title="Tutorials"
       breadcrumbParent={{ label: "Resources", href: "/resources" }}
       breadcrumbCurrent="Tutorials"
@@ -32,6 +38,6 @@ export default function ResourcesTutorialsPage() {
       <p>
         More articles will live under our <Link href="/resources/blog">blog</Link> as we publish.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

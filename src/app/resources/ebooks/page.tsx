@@ -1,16 +1,23 @@
-import { MarketingLead, MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingLead } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Free eBooks",
-  description: `Downloadable guides and lookbooks from ${SITE_NAME}.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function ResourcesEbooksPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("resources-ebooks", {
+    title: "Free eBooks",
+    description: `Downloadable guides and lookbooks from ${SITE_NAME}.`,
+  });
+}
+
+export default async function ResourcesEbooksPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="resources-ebooks"
       title="Free eBooks & guides"
       breadcrumbParent={{ label: "Resources", href: "/resources" }}
       breadcrumbCurrent="eBooks"
@@ -24,6 +31,6 @@ export default function ResourcesEbooksPage() {
         New downloads will appear here first. Until then, explore styling ideas on our{" "}
         <Link href="/resources/blog">blog</Link> and video picks linked from the footer.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

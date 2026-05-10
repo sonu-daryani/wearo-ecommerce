@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Resources",
-  description: `Guides, tutorials, and articles from ${SITE_NAME}.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function ResourcesIndexPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("resources", {
+    title: "Resources",
+    description: `Guides, tutorials, and articles from ${SITE_NAME}.`,
+  });
+}
+
+export default async function ResourcesIndexPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="resources"
       title="Resources"
       description="Learn, browse deeper, and get inspired beyond the catalogue."
     >
@@ -40,6 +46,6 @@ export default function ResourcesIndexPage() {
           </Link>
         </li>
       </ul>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

@@ -1,16 +1,23 @@
-import { MarketingLead, MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingLead } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "About us",
-  description: `Learn about ${SITE_NAME} — curated fashion for India, quality-first buying, and a smooth shopping experience.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function AboutPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("about", {
+    title: "About us",
+    description: `Learn about ${SITE_NAME} — curated fashion for India, quality-first buying, and a smooth shopping experience.`,
+  });
+}
+
+export default async function AboutPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="about"
       title={`About ${SITE_NAME}`}
       breadcrumbCurrent="About"
       description="Fashion that fits your life — from casual weekdays to celebrations."
@@ -28,12 +35,14 @@ export default function AboutPage() {
       <ul>
         <li>Transparent product information and clear sizing guidance where available.</li>
         <li>Secure checkout with payment methods your store enables.</li>
-        <li>Support when you need it — see <Link href="/support">Customer support</Link>.</li>
+        <li>
+          Support when you need it — see <Link href="/support">Customer support</Link>.
+        </li>
       </ul>
       <p>
         Ready to browse? <Link href="/shop">Explore the shop</Link> or read how we ship in{" "}
         <Link href="/delivery">Delivery details</Link>.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

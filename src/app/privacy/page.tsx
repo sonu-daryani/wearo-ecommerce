@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_DOMAIN, SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Privacy policy",
-  description: `How ${SITE_NAME} collects, uses, and protects your personal data.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function PrivacyPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("privacy", {
+    title: "Privacy policy",
+    description: `How ${SITE_NAME} collects, uses, and protects your personal data.`,
+  });
+}
+
+export default async function PrivacyPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="privacy"
       title="Privacy policy"
       breadcrumbCurrent="Privacy"
       description="Your privacy matters. This page summarises how we handle personal information."
@@ -56,6 +62,6 @@ export default function PrivacyPage() {
         We may revise this policy; the “Last updated” date will change. Continued use after updates
         means you accept the revised policy where permitted.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

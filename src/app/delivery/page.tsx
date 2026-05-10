@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Delivery details",
-  description: `Shipping regions, timelines, and tracking for ${SITE_NAME} orders across India.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function DeliveryPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("delivery", {
+    title: "Delivery details",
+    description: `Shipping regions, timelines, and tracking for ${SITE_NAME} orders across India.`,
+  });
+}
+
+export default async function DeliveryPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="delivery"
       title="Delivery details"
       breadcrumbCurrent="Delivery"
       description="Where we ship, how long it usually takes, and how to follow your parcel."
@@ -47,6 +53,6 @@ export default function DeliveryPage() {
         Wrong address, delayed parcel, or damaged package?{" "}
         <Link href="/support">Contact support</Link> with your order ID.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

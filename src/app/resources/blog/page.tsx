@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Blog",
-  description: `News, style notes, and how-tos from ${SITE_NAME}.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function ResourcesBlogPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("resources-blog", {
+    title: "Blog",
+    description: `News, style notes, and how-tos from ${SITE_NAME}.`,
+  });
+}
+
+export default async function ResourcesBlogPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="resources-blog"
       title="Blog"
       breadcrumbParent={{ label: "Resources", href: "/resources" }}
       description="Stories from our team — launches, fabric notes, and seasonal edits."
@@ -24,6 +30,6 @@ export default function ResourcesBlogPage() {
         No articles yet — connect a CMS or markdown workflow when you’re ready to scale{" "}
         {SITE_NAME} editorial.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

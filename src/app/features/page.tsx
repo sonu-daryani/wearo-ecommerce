@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Features",
-  description: `What you get when you shop on ${SITE_NAME}: secure checkout, order tracking, and account tools.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function FeaturesPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("features", {
+    title: "Features",
+    description: `What you get when you shop on ${SITE_NAME}: secure checkout, order tracking, and account tools.`,
+  });
+}
+
+export default async function FeaturesPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="features"
       title="Features"
       description={`Everything ${SITE_NAME} offers today — designed to make shopping simple and trustworthy.`}
     >
@@ -35,6 +41,6 @@ export default function FeaturesPage() {
         Our <Link href="/support">support</Link> page lists how to reach us and typical response
         times.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

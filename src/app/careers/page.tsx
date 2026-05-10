@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Careers",
-  description: `Careers at ${SITE_NAME} — join our team building fashion commerce for India.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function CareersPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("careers", {
+    title: "Careers",
+    description: `Careers at ${SITE_NAME} — join our team building fashion commerce for India.`,
+  });
+}
+
+export default async function CareersPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="careers"
       title="Careers"
       description="We’re growing a thoughtful e-commerce experience for Indian shoppers."
     >
@@ -30,6 +36,6 @@ export default function CareersPage() {
         <li>Customer empathy — especially when things go wrong.</li>
         <li>Attention to detail in product and process.</li>
       </ul>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }

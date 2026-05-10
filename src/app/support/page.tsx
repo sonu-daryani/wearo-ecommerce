@@ -1,16 +1,22 @@
-import { MarketingPage } from "@/components/marketing/MarketingPage";
+import { MarketingPageWithCms } from "@/components/marketing/MarketingPageWithCms";
+import { marketingMetadata } from "@/lib/cms-marketing-metadata";
 import { SITE_DOMAIN, SITE_NAME } from "@/lib/site-config";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Customer support",
-  description: `Get help with orders, returns, and shopping on ${SITE_DOMAIN}.`,
-};
+export const dynamic = "force-dynamic";
 
-export default function SupportPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return marketingMetadata("support", {
+    title: "Customer support",
+    description: `Get help with orders, returns, and shopping on ${SITE_DOMAIN}.`,
+  });
+}
+
+export default async function SupportPage() {
   return (
-    <MarketingPage
+    <MarketingPageWithCms
+      slug="support"
       title="Customer support"
       breadcrumbCurrent="Support"
       description={`We’re here to help you shop confidently on ${SITE_NAME}.`}
@@ -41,6 +47,6 @@ export default function SupportPage() {
         We aim to reply within 1–2 business days. Peak sale periods may take a little longer — thank
         you for your patience.
       </p>
-    </MarketingPage>
+    </MarketingPageWithCms>
   );
 }
