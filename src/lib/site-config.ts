@@ -54,6 +54,13 @@ export function getAdminPortalHref(): string {
   return "/__/admin";
 }
 
+/** Footer “YouTube playlist” link — override with `NEXT_PUBLIC_YOUTUBE_PLAYLIST_URL`. */
+export function getYoutubePlaylistUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_YOUTUBE_PLAYLIST_URL?.trim();
+  if (raw) return raw;
+  return "https://www.youtube.com";
+}
+
 export function formatCategoryLabel(slug: string): string {
   return CATEGORY_LABELS[slug] ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

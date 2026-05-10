@@ -10,6 +10,8 @@ export type FLink = {
   id: number;
   label: string;
   url: string;
+  /** Opens in a new tab (external URLs, social). */
+  external?: boolean;
 };
 
 export type FooterLinks = {
